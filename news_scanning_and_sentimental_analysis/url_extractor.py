@@ -1,24 +1,22 @@
 """
-Improved URL Extractor and Filter for News Analysis
+Hybrid URL Extractor using CurrentNews API + DuckDuckGo fallback
 Features:
+- Primary: CurrentNews API search
+- Fallback: DuckDuckGo search if API returns < 20 results
 - Duplicate news detection using title similarity
 - Modular, configurable design
-- Better article detection
-- Cleaner code structure
 """
 
-try:
-    from ddgs import DDGS
-except ImportError:
-    from ddgs import DDGS
+from ddgs import DDGS
 
+import requests
 from urllib.parse import urlparse
 import time
 from datetime import datetime, timedelta
 import json
 import re
 from difflib import SequenceMatcher
-from typing import List, Dict, Optional, Set
+from typing import List, Dict, Optional
 
 
 class NewsFilterConfig:
@@ -26,7 +24,6 @@ class NewsFilterConfig:
 
     # Domains to completely block
     BLOCKED_DOMAINS = {
-        # Social media
         "twitter.com",
         "x.com",
         "facebook.com",
@@ -35,26 +32,22 @@ class NewsFilterConfig:
         "tiktok.com",
         "pinterest.com",
         "reddit.com",
-        # Job listings
         "kariyer.net",
         "indeed.com",
         "glassdoor.com",
         "monster.com",
         "secretcv.com",
         "yenibiris.com",
-        # Video sites
         "youtube.com",
         "youtu.be",
         "vimeo.com",
         "dailymotion.com",
-        # Forums & wikis
         "eksisozluk.com",
         "ekşisözlük.com",
         "quora.com",
         "wikipedia.org",
         "wikiwand.com",
         "britannica.com",
-        # Non-news finance sites
         "investing.com",
         "finance.yahoo.com",
         "tradingview.com",
@@ -81,10 +74,12 @@ class NewsFilterConfig:
         "/etiket/",
         "/tag/",
         "/kategori/",
+        "/category/",
         "/search?",
         "/ara?",
         "/haber-arsivi/",
         "/arsiv/",
+        "/archive/",
         "/hisse/",
         "/hisse-haberleri/",
         "/borsa/",
@@ -142,7 +137,11 @@ class NewsFilterConfig:
     # Similarity threshold for duplicate detection (0.0 - 1.0)
     TITLE_SIMILARITY_THRESHOLD = 0.75
 
-    # Search queries for different aspects of company news
+    # CurrentNews API Configuration
+    CURRENTNEWS_API_KEY = "j0IuEj0aSYQDTmFpbYrboY6DfxKSzvb8Rd6_j-VcfZBaVKI-"
+    CURRENTNEWS_BASE_URL = "https://api.currentsapi.services/v1/search"
+
+    # Search queries for DuckDuckGo fallback
     SEARCH_QUERY_TEMPLATES = [
         '"{company}" haber {year}',
         '"{company}" açıklama',
@@ -288,8 +287,82 @@ class ArticleValidator:
             return False
 
 
-class SearchEngine:
-    """Handles search operations"""
+class CurrentNewsSearchEngine:
+    """Handles CurrentNews API search operations"""
+
+    def __init__(self, config: NewsFilterConfig):
+        self.config = config
+        self.api_key = config.CURRENTNEWS_API_KEY
+        self.base_url = config.CURRENTNEWS_BASE_URL
+
+    def search_currentnews(
+        self,
+        company_name: str,
+        max_results: int = 100,
+        language: str = "tr",
+    ) -> List[Dict]:
+        """
+        Search CurrentNews API for company news
+
+        Args:
+            company_name: Company name to search
+            max_results: Maximum results to retrieve
+            language: Language code (tr for Turkish, en for English)
+
+        Returns:
+            List of article dictionaries
+        """
+        print(f"🔍 Searching CurrentNews API for: {company_name}")
+
+        # Build query parameters
+        params = {
+            "keywords": company_name,
+            "apiKey": self.api_key,
+            "language": language,
+        }
+
+        results = []
+
+        try:
+            # Make API request
+            response = requests.get(self.base_url, params=params, timeout=10)
+            response.raise_for_status()
+
+            data = response.json()
+
+            # Check for errors
+            if data.get("status") != "ok":
+                print(f"  ✗ API Error: {data.get('message', 'Unknown error')}")
+                return []
+
+            # Extract articles
+            articles = data.get("news", [])
+            print(f"  ✓ Found {len(articles)} articles from API")
+
+            for article in articles[:max_results]:
+                results.append(
+                    {
+                        "url": article.get("url", ""),
+                        "title": article.get("title", ""),
+                        "snippet": article.get("description", ""),
+                        "source": article.get("author", "currentnews"),
+                        "published_at": article.get("published", ""),
+                        "image": article.get("image", ""),
+                    }
+                )
+
+            return results
+
+        except requests.exceptions.RequestException as e:
+            print(f"  ✗ CurrentNews API request failed: {e}")
+            return []
+        except Exception as e:
+            print(f"  ✗ Unexpected error: {e}")
+            return []
+
+
+class DuckDuckGoSearchEngine:
+    """Handles DuckDuckGo search operations"""
 
     def __init__(self, config: NewsFilterConfig):
         self.config = config
@@ -342,7 +415,7 @@ class SearchEngine:
                         print(f"  ⚠️ Query failed: {query[:50]}... - {e}")
                         continue
 
-            print(f"  ✓ Found {len(results)} raw results")
+            print(f"  ✓ Found {len(results)} raw results from DuckDuckGo")
             return results
 
         except Exception as e:
@@ -351,7 +424,7 @@ class SearchEngine:
 
 
 class URLExtractor:
-    """Main URL extraction and filtering class"""
+    """Main URL extraction and filtering class with hybrid search"""
 
     def __init__(
         self,
@@ -368,50 +441,23 @@ class URLExtractor:
         self.config = config or NewsFilterConfig()
         self.validator = ArticleValidator(self.config)
         self.duplicate_detector = DuplicateDetector(similarity_threshold)
-        self.search_engine = SearchEngine(self.config)
+        self.currentnews_engine = CurrentNewsSearchEngine(self.config)
+        self.ddg_engine = DuckDuckGoSearchEngine(self.config)
 
-    def extract_urls(
-        self,
-        company_name: str,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        target_count: int = 30,
-    ) -> List[Dict]:
+    def filter_and_process_results(
+        self, raw_results: List[Dict], target_count: int, source_name: str
+    ) -> tuple[List[Dict], Dict]:
         """
-        Extract and filter URLs for company news
+        Filter and deduplicate results
 
         Args:
-            company_name: Company name to search for
-            start_date: Start date (YYYY-MM-DD) - defaults to 3 years ago
-            end_date: End date (YYYY-MM-DD) - defaults to today
-            target_count: Target number of unique URLs to return
+            raw_results: Raw search results
+            target_count: Target number of articles to collect
+            source_name: Name of the source for logging
 
         Returns:
-            List of dictionaries with url, title, snippet, priority, source
+            Tuple of (filtered_urls, stats)
         """
-        # Set default dates
-        if end_date is None:
-            end_date = datetime.now().strftime("%Y-%m-%d")
-        if start_date is None:
-            start_date = (datetime.now() - timedelta(days=3 * 365)).strftime("%Y-%m-%d")
-
-        print(f"\n{'='*60}")
-        print(f"📰 URL EXTRACTION STARTED")
-        print(f"{'='*60}")
-        print(f"Company: {company_name}")
-        print(f"Date Range: {start_date} to {end_date}")
-        print(f"Target: {target_count} unique articles\n")
-
-        # Reset duplicate detector
-        self.duplicate_detector.reset()
-
-        # Search
-        raw_results = self.search_engine.search_duckduckgo(
-            company_name,
-            max_results=target_count * 3,  # Get more to account for filtering
-        )
-
-        # Filter and deduplicate
         filtered_urls = []
         stats = {
             "total_found": len(raw_results),
@@ -422,7 +468,7 @@ class URLExtractor:
             "kept": 0,
         }
 
-        print(f"\n🔧 Filtering and deduplicating results...")
+        print(f"  🔧 Filtering {source_name} results...")
 
         for result in raw_results:
             url = result["url"]
@@ -452,6 +498,7 @@ class URLExtractor:
                     "snippet": result.get("snippet", ""),
                     "priority": self.validator.is_priority_source(url),
                     "source": result.get("source", "unknown"),
+                    "published_at": result.get("published_at", ""),
                 }
             )
             stats["kept"] += 1
@@ -459,6 +506,105 @@ class URLExtractor:
             # Stop if we have enough
             if len(filtered_urls) >= target_count:
                 break
+
+        return filtered_urls, stats
+
+    def extract_urls(
+        self,
+        company_name: str,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        target_count: int = 30,
+        language: str = "tr",
+        api_threshold: int = 20,
+    ) -> List[Dict]:
+        """
+        Extract and filter URLs for company news using hybrid approach
+
+        Args:
+            company_name: Company name to search for
+            start_date: Start date (YYYY-MM-DD) - defaults to 3 years ago
+            end_date: End date (YYYY-MM-DD) - defaults to today
+            target_count: Target number of unique URLs to return
+            language: Language code (tr, en, etc.)
+            api_threshold: Minimum API results before using DuckDuckGo fallback
+
+        Returns:
+            List of dictionaries with url, title, snippet, priority, source
+        """
+        # Set default dates
+        if end_date is None:
+            end_date = datetime.now().strftime("%Y-%m-%d")
+        if start_date is None:
+            start_date = (datetime.now() - timedelta(days=3 * 365)).strftime("%Y-%m-%d")
+
+        print(f"\n{'='*60}")
+        print(f"📰 HYBRID URL EXTRACTION STARTED")
+        print(f"{'='*60}")
+        print(f"Company: {company_name}")
+        print(f"Date Range: {start_date} to {end_date}")
+        print(f"Language: {language}")
+        print(f"Target: {target_count} unique articles")
+        print(f"API Threshold: {api_threshold} articles\n")
+
+        # Reset duplicate detector
+        self.duplicate_detector.reset()
+
+        # Phase 1: Try CurrentNews API
+        api_results = self.currentnews_engine.search_currentnews(
+            company_name, max_results=100, language=language
+        )
+
+        # Filter API results
+        filtered_urls, api_stats = self.filter_and_process_results(
+            api_results, target_count, "CurrentNews API"
+        )
+
+        print(f"  ✓ API provided {len(filtered_urls)} valid articles")
+
+        # Phase 2: Use DuckDuckGo if needed
+        if len(filtered_urls) < api_threshold:
+            print(
+                f"\n⚠️  API results ({len(filtered_urls)}) below threshold ({api_threshold})"
+            )
+            print(f"🔄 Activating DuckDuckGo fallback...\n")
+
+            remaining_needed = target_count - len(filtered_urls)
+            ddg_results = self.ddg_engine.search_duckduckgo(
+                company_name, max_results=remaining_needed * 3
+            )
+
+            # Filter DuckDuckGo results
+            ddg_filtered, ddg_stats = self.filter_and_process_results(
+                ddg_results, remaining_needed, "DuckDuckGo"
+            )
+
+            print(f"  ✓ DuckDuckGo provided {len(ddg_filtered)} additional articles")
+
+            # Combine results
+            filtered_urls.extend(ddg_filtered)
+
+            # Combined stats
+            combined_stats = {
+                "api_total": api_stats["total_found"],
+                "api_kept": api_stats["kept"],
+                "ddg_total": ddg_stats["total_found"],
+                "ddg_kept": ddg_stats["kept"],
+                "total_found": api_stats["total_found"] + ddg_stats["total_found"],
+                "blocked_domains": api_stats["blocked_domains"]
+                + ddg_stats["blocked_domains"],
+                "blocked_patterns": api_stats["blocked_patterns"]
+                + ddg_stats["blocked_patterns"],
+                "not_articles": api_stats["not_articles"] + ddg_stats["not_articles"],
+                "duplicates": api_stats["duplicates"] + ddg_stats["duplicates"],
+                "kept": api_stats["kept"] + ddg_stats["kept"],
+            }
+        else:
+            print(
+                f"\n✅ API provided sufficient results ({len(filtered_urls)} >= {api_threshold})"
+            )
+            print("📌 DuckDuckGo fallback not needed\n")
+            combined_stats = api_stats
 
         # Sort by priority (major news sources first)
         filtered_urls.sort(key=lambda x: x["priority"], reverse=True)
@@ -470,20 +616,27 @@ class URLExtractor:
         print(f"\n{'='*60}")
         print(f"📊 EXTRACTION STATISTICS")
         print(f"{'='*60}")
-        print(f"Total found:          {stats['total_found']}")
-        print(f"Blocked domains:      {stats['blocked_domains']}")
-        print(f"Blocked patterns:     {stats['blocked_patterns']}")
-        print(f"Not articles:         {stats['not_articles']}")
-        print(f"Duplicates removed:   {stats['duplicates']}")
+        if "api_total" in combined_stats:
+            print(
+                f"API Results:          {combined_stats['api_total']} found, {combined_stats['api_kept']} kept"
+            )
+            print(
+                f"DuckDuckGo Results:   {combined_stats['ddg_total']} found, {combined_stats['ddg_kept']} kept"
+            )
+            print(f"---")
+        print(f"Total found:          {combined_stats['total_found']}")
+        print(f"Blocked domains:      {combined_stats.get('blocked_domains', 0)}")
+        print(f"Blocked patterns:     {combined_stats.get('blocked_patterns', 0)}")
+        print(f"Not articles:         {combined_stats['not_articles']}")
+        print(f"Duplicates removed:   {combined_stats['duplicates']}")
         print(f"Final count:          {len(filtered_urls)}")
         print(f"Priority sources:     {sum(1 for u in filtered_urls if u['priority'])}")
         print(f"{'='*60}\n")
 
         return filtered_urls
 
-    def save_to_json(self, urls: List[Dict]):
+    def save_to_json(self, urls: List[Dict], filename: str = "extracted_urls.json"):
         """Save URLs to JSON file"""
-        filename: str = "extracted_urls.json"
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(urls, f, ensure_ascii=False, indent=2)
         print(f"💾 Saved to {filename}")
@@ -494,13 +647,15 @@ if __name__ == "__main__":
     # Create extractor with custom similarity threshold
     extractor = URLExtractor(similarity_threshold=0.75)
 
-    # Extract URLs
-    company_name = "türkcell"
+    # Extract URLs with hybrid approach
+    company_name = "baykar"
     urls = extractor.extract_urls(
         company_name=company_name,
         start_date="2023-01-01",
         end_date="2025-12-31",
-        target_count=30,
+        target_count=20,
+        language="tr",
+        api_threshold=20,  # Use DuckDuckGo if API returns < 20 articles
     )
 
     # Display results
@@ -508,8 +663,12 @@ if __name__ == "__main__":
     print("=" * 60)
     for i, item in enumerate(urls, 1):
         priority_flag = "⭐" if item["priority"] else "  "
-        print(f"{i:2d}. {priority_flag} {item['title'][:60]}")
-        print(f"     {item['url']}\n")
+        source_indicator = "🌐" if item["source"] == "duckduckgo" else "📡"
+        print(f"{i:2d}. {priority_flag} {source_indicator} {item['title'][:55]}")
+        print(f"     {item['url']}")
+        print(
+            f"     Source: {item['source']} | Published: {item.get('published_at', 'N/A')}\n"
+        )
 
     # Save results
     extractor.save_to_json(urls)
