@@ -1,7 +1,7 @@
 """
 HTML Cleaner with Language Detection
 Features:
-- Extracts clean text from HTML using trafilatura
+- Extracts clean text from HTML files using trafilatura
 - Detects language (Turkish vs English)
 - Returns LLM-ready text
 - Handles various edge cases and errors
@@ -9,7 +9,7 @@ Features:
 
 import trafilatura
 from langdetect import detect, LangDetectException
-from typing import Tuple, Optional
+from typing import Tuple
 import re
 
 
@@ -18,7 +18,7 @@ class HTMLCleaner:
 
     def __init__(self):
         """Initialize HTML cleaner"""
-        self.min_text_length = 100  # Minimum text length to consider valid
+        self.min_text_length = 300  # Minimum text length to consider valid
         self.max_text_length = 50000  # Maximum text length for LLM context
 
     def clean_text(self, text: str) -> str:
@@ -119,6 +119,59 @@ class HTMLCleaner:
             # If detection fails, default to Turkish
             return 0
 
+    def is_valid_content(self, text: str) -> bool:
+        """
+        Check if extracted text is valid article content (not code/scripts)
+
+        Args:
+            text: Extracted text to validate
+
+        Returns:
+            True if valid content, False if it's code/scripts
+        """
+        if not text or len(text) < 50:
+            return False
+
+        # Check for code/script indicators
+        code_indicators = [
+            "var ",
+            "function(",
+            "return ",
+            "const ",
+            "let ",
+            ".push(",
+            ".createElement(",
+            "setAttribute(",
+            "getElementById(",
+            "querySelector(",
+            "addEventListener(",
+            "{",
+            "}",
+            "=>",
+            "//",
+            "/*",
+            "*/",
+            ";",
+            "===",
+            "!==",
+            "typeof",
+            "undefined",
+        ]
+
+        # Count how many code indicators are present
+        code_count = sum(1 for indicator in code_indicators if indicator in text)
+
+        # If more than 5 different code indicators, it's probably code
+        if code_count > 5:
+            return False
+
+        # Check ratio of special characters (code has lots of them)
+        special_chars = len([c for c in text if c in "{}[];()=<>"])
+        if len(text) > 0 and (special_chars / len(text)) > 0.05:
+            return False
+
+        return True
+
     def extract_from_html_file(self, html_file_path: str) -> Tuple[str, int]:
         """
         Extract clean text from HTML file
@@ -135,39 +188,47 @@ class HTMLCleaner:
             with open(html_file_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
 
-            return self.extract_from_html_string(html_content)
+            # Try multiple extraction strategies
+            extracted_text = None
 
-        except FileNotFoundError:
-            raise FileNotFoundError(f"HTML file not found: {html_file_path}")
-        except Exception as e:
-            raise Exception(f"Error reading HTML file: {e}")
-
-    def extract_from_html_string(self, html_content: str) -> Tuple[str, int]:
-        """
-        Extract clean text from HTML string
-
-        Args:
-            html_content: HTML content as string
-
-        Returns:
-            Tuple of (cleaned_text, language_code)
-            language_code: 0 for Turkish, 1 for English
-        """
-        try:
-            # Extract main content using trafilatura
-            # favor_precision prioritizes quality over quantity
-            # include_comments=False to skip comment sections
-            # include_tables=True to capture tabular data
+            # Strategy 1: Precision mode (strict)
             extracted_text = trafilatura.extract(
                 html_content,
                 favor_precision=True,
                 include_comments=False,
                 include_tables=True,
-                no_fallback=False,  # Use fallback extraction if needed
+                no_fallback=True,  # Don't use fallback initially
             )
 
+            # Strategy 2: If first attempt failed or returned code, try recall mode
+            if not extracted_text or not self.is_valid_content(extracted_text):
+                extracted_text = trafilatura.extract(
+                    html_content,
+                    favor_recall=True,
+                    include_comments=False,
+                    include_tables=True,
+                    no_fallback=True,
+                )
+
+            # Strategy 3: Try with different settings
+            if not extracted_text or not self.is_valid_content(extracted_text):
+                extracted_text = trafilatura.extract(
+                    html_content,
+                    include_comments=False,
+                    include_tables=True,
+                    no_fallback=False,
+                    favor_precision=False,
+                    favor_recall=False,
+                )
+
+            # Final validation
             if not extracted_text:
                 raise ValueError("No text could be extracted from HTML")
+
+            if not self.is_valid_content(extracted_text):
+                raise ValueError(
+                    "Extracted text appears to be code/scripts, not article content"
+                )
 
             # Check minimum length
             if len(extracted_text) < self.min_text_length:
@@ -186,8 +247,10 @@ class HTMLCleaner:
 
             return cleaned_text, language_code
 
+        except FileNotFoundError:
+            raise FileNotFoundError(f"HTML file not found: {html_file_path}")
         except Exception as e:
-            raise Exception(f"Error extracting text from HTML: {e}")
+            raise Exception(f"Error processing HTML file: {e}")
 
     def process_html_file(
         self, html_file_path: str, verbose: bool = True
@@ -228,7 +291,7 @@ class HTMLCleaner:
             raise
 
 
-# Convenience functions for easy usage
+# Convenience function for easy usage
 def clean_html_file(html_file_path: str, verbose: bool = True) -> Tuple[str, int]:
     """
     Clean HTML file and return text with language code
@@ -245,114 +308,76 @@ def clean_html_file(html_file_path: str, verbose: bool = True) -> Tuple[str, int
     return cleaner.process_html_file(html_file_path, verbose=verbose)
 
 
-def clean_html_string(html_content: str, verbose: bool = False) -> Tuple[str, int]:
-    """
-    Clean HTML string and return text with language code
-
-    Args:
-        html_content: HTML content as string
-        verbose: Print processing information
-
-    Returns:
-        Tuple of (cleaned_text, language_code)
-        language_code: 0 for Turkish, 1 for English
-    """
-    cleaner = HTMLCleaner()
-
-    if verbose:
-        print(f"\n{'='*60}")
-        print(f"🧹 HTML CLEANING STARTED")
-        print(f"{'='*60}")
-
-    try:
-        text, lang_code = cleaner.extract_from_html_string(html_content)
-
-        if verbose:
-            language = "Turkish" if lang_code == 0 else "English"
-            print(f"✓ Extraction successful")
-            print(f"  - Text length: {len(text)} characters")
-            print(f"  - Language: {language} (code: {lang_code})")
-            print(f"  - Preview: {text[:200]}...")
-            print(f"{'='*60}\n")
-
-        return text, lang_code
-
-    except Exception as e:
-        if verbose:
-            print(f"✗ Extraction failed: {e}")
-            print(f"{'='*60}\n")
-        raise
-
-
 # Example usage
 if __name__ == "__main__":
-    # Example 1: Clean from file
-    try:
-        text, language = clean_html_file(
-            "news_scanning_and_sentimental_analysis\scraped_data\html_content\article_001_milliyet_55cb6ab1.html",
-            verbose=True,
-        )
-        print(f"Language code: {language}")
-        print(f"Text length: {len(text)}")
-        print(f"\nFirst 500 characters:")
-        print(text[:500])
-    except Exception as e:
-        print(f"Error: {e}")
+    import os
 
-    print("\n" + "=" * 60 + "\n")
+    # Configuration
+    html_dir = "./scraped_data/html_content/"
+    output_dir = "./scraped_data/cleaned_text/"
 
-    # Example 2: Clean from HTML string
-    sample_html = """
-    <html>
-    <head><title>Test Article</title></head>
-    <body>
-        <nav>Navigation menu</nav>
-        <article>
-            <h1>Baykar'ın Yeni İHA Projesi</h1>
-            <p>Baykar Teknoloji, savunma sanayiinde yeni bir döneme imza atıyor. 
-            Şirket, geliştirdiği yeni insansız hava aracı ile dünya pazarında 
-            önemli bir oyuncu olmayı hedefliyor.</p>
-            <p>Proje kapsamında geliştirilen teknolojiler, yerli ve milli 
-            üretim anlayışıyla hayata geçiriliyor. Uzmanlar, bu gelişmenin 
-            Türkiye'nin savunma sanayiindeki konumunu güçlendireceğini 
-            belirtiyor.</p>
-        </article>
-        <footer>© 2024 News Site</footer>
-    </body>
-    </html>
-    """
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
 
-    try:
-        text, language = clean_html_string(sample_html, verbose=True)
-        lang_name = "Turkish" if language == 0 else "English"
-        print(f"Detected language: {lang_name}")
-        print(f"\nCleaned text:\n{text}")
-    except Exception as e:
-        print(f"Error: {e}")
+    print(f"\n{'='*60}")
+    print(f"🚀 BATCH HTML CLEANING")
+    print(f"{'='*60}")
+    print(f"Input directory: {os.path.abspath(html_dir)}")
+    print(f"Output directory: {os.path.abspath(output_dir)}")
+    print(f"{'='*60}\n")
 
-    # Example 3: Using the class directly
-    print("\n" + "=" * 60 + "\n")
-    print("Example 3: Using HTMLCleaner class directly")
+    # Check if input directory exists
+    if not os.path.exists(html_dir):
+        print(f"❌ Error: Input directory not found: {html_dir}")
+        print(f"Current working directory: {os.getcwd()}")
+        exit(1)
 
+    # Get all .html files
+    html_files = [f for f in os.listdir(html_dir) if f.endswith(".html")]
+
+    if not html_files:
+        print(f"❌ No HTML files found in {html_dir}")
+        exit(1)
+
+    print(f"Found {len(html_files)} HTML files to process\n")
+
+    # Process each file
     cleaner = HTMLCleaner()
+    successful = 0
+    failed = 0
 
-    # Process multiple files
-    html_files = ["article1.html", "article2.html", "article3.html"]
+    for i, html_file in enumerate(html_files, 1):
+        input_path = os.path.join(html_dir, html_file)
 
-    results = []
-    for html_file in html_files:
+        print(f"[{i}/{len(html_files)}] Processing: {html_file}")
+
         try:
-            text, lang = cleaner.process_html_file(html_file, verbose=False)
-            results.append(
-                {
-                    "file": html_file,
-                    "text": text,
-                    "language": "Turkish" if lang == 0 else "English",
-                    "length": len(text),
-                }
-            )
-            print(f"✓ {html_file}: {len(text)} chars, {results[-1]['language']}")
-        except Exception as e:
-            print(f"✗ {html_file}: {e}")
+            # Extract and clean text
+            text, lang_code = cleaner.process_html_file(input_path, verbose=False)
+            language = "Turkish" if lang_code == 0 else "English"
 
-    print(f"\nSuccessfully processed {len(results)} files")
+            # Create output filename with language code prefix
+            # Format: {lang_code}_{original_name}.txt
+            output_filename = f"{lang_code}_{html_file.replace('.html', '.txt')}"
+            output_path = os.path.join(output_dir, output_filename)
+
+            # Save to text file
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            print(f"    ✓ Saved: {output_filename}")
+            print(f"      Length: {len(text)} chars | Language: {language}\n")
+            successful += 1
+
+        except Exception as e:
+            print(f"    ✗ Failed: {e}\n")
+            failed += 1
+
+    # Summary
+    print(f"{'='*60}")
+    print(f"📊 PROCESSING COMPLETE")
+    print(f"{'='*60}")
+    print(f"✓ Successful: {successful}")
+    print(f"✗ Failed: {failed}")
+    print(f"📁 Output saved to: {os.path.abspath(output_dir)}")
+    print(f"{'='*60}\n")
