@@ -1,2 +1,4 @@
 .vscode/
 scraped_data/
+extracted_urls.json
+sentiment_results.json
