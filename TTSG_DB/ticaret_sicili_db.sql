@@ -1,4 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+-- eğer arama sadece başında yapılacaksa bu gereksiz
 
 CREATE TABLE ilanlar (
     id SERIAL PRIMARY KEY,
