@@ -4,8 +4,8 @@ CREATE TABLE ilanlar (
     id SERIAL PRIMARY KEY,
     
     -- Temel
-    ilan_no VARCHAR(50) NOT NULL,
-    ilan_turu SMALLINT NOT NULL,          -- 1-52 arası
+    ilan_no VARCHAR(50) NOT NULL,         -- null olabilir
+    ilan_turu SMALLINT NOT NULL,          -- 1-10 arası
     
     -- Şirket
     mersis_no VARCHAR(16),
@@ -17,7 +17,7 @@ CREATE TABLE ilanlar (
     adres TEXT,
     
     -- Tarihler
-    tescil_tarihi DATE NOT NULL,
+    tescil_tarihi DATE NOT NULL,           -- null olabilir
     gazete_tarihi DATE,
     gazete_sayisi VARCHAR(20),
     
