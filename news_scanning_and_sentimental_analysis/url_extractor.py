@@ -2,7 +2,7 @@
 Hybrid URL Extractor using CurrentNews API + DuckDuckGo fallback
 Features:
 - Primary: CurrentNews API search
-- Fallback: DuckDuckGo search if API returns < 20 results
+- Fallback: DuckDuckGo search if API returns < 50 results
 - Duplicate news detection using title similarity
 - Modular, configurable design
 """
@@ -325,7 +325,7 @@ class CurrentNewsSearchEngine:
 
         try:
             # Make API request
-            response = requests.get(self.base_url, params=params, timeout=10)
+            response = requests.get(self.base_url, params=params, timeout=15)
             response.raise_for_status()
 
             data = response.json()
@@ -516,7 +516,7 @@ class URLExtractor:
         end_date: Optional[str] = None,
         target_count: int = 30,
         language: str = "tr",
-        api_threshold: int = 20,
+        api_threshold: int = 50,
     ) -> List[Dict]:
         """
         Extract and filter URLs for company news using hybrid approach
@@ -648,14 +648,14 @@ if __name__ == "__main__":
     extractor = URLExtractor(similarity_threshold=0.75)
 
     # Extract URLs with hybrid approach
-    company_name = "baykar"
+    company_name = "turkcell"
     urls = extractor.extract_urls(
         company_name=company_name,
         start_date="2023-01-01",
         end_date="2025-12-31",
-        target_count=20,
+        target_count=50,
         language="tr",
-        api_threshold=20,  # Use DuckDuckGo if API returns < 20 articles
+        api_threshold=50,  # Use DuckDuckGo if API returns < 50 articles
     )
 
     # Display results

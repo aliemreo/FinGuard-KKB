@@ -1,34 +1,40 @@
 """
-News Scraper using Playwright - OPTIMIZED VERSION
-Scrapes articles from URLs with parallel processing and viewport screenshots
+News Scraper using Playwright - MAXIMUM SPEED VERSION (STABLE)
+Key optimizations:
+- Viewport-only screenshots (not full page)
+- Faster wait strategy
+- No route interception (avoids threading issues)
 """
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import List, Dict, Optional
-from playwright.sync_api import sync_playwright, Page, Browser, BrowserContext
+from playwright.sync_api import sync_playwright, Page
 from urllib.parse import urlparse
 import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
+worker_count = 25  # Number of parallel workers
+USE_VIEWPORT_ONLY = True
+
 
 class NewsScraper:
-    # Scrapes news articles using Playwright with parallel processing
-
     def __init__(
         self,
         output_dir: str = "scraped_data",
         headless: bool = True,
         timeout: int = 15000,
-        max_workers: int = 10,
+        max_workers=worker_count,
+        viewport_only: bool = USE_VIEWPORT_ONLY,
     ):
-
         self.output_dir = Path(output_dir)
         self.headless = headless
         self.timeout = timeout
         self.max_workers = max_workers
+        self.viewport_only = viewport_only
 
         # Create directory structure
         self.screenshots_dir = self.output_dir / "screenshots"
@@ -44,42 +50,23 @@ class NewsScraper:
         self.errors_lock = threading.Lock()
 
     def _generate_filename(self, url: str, index: int) -> str:
-        """
-        Generate a safe filename from URL
-
-        Args:
-            url: Article URL
-            index: Article index number
-
-        Returns:
-            Safe filename without extension
-        """
-        # Using hash of URL to ensure uniqueness and avoid filesystem issues
         url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-
-        # Extract domain for readability
         try:
             domain = urlparse(url).netloc.replace("www.", "")
-            # Clean domain name
-            domain = domain.split(".")[0]  # Get main domain part
+            domain = domain.split(".")[0]
         except:
             domain = "unknown"
-
         return f"article_{index:03d}_{domain}_{url_hash}"
 
-    def _take_full_page_screenshot(self, page: Page, output_path: Path) -> bool:
-        """
-        Take a full-page screenshot
-
-        Args:
-            page: Playwright page object
-            output_path: Path to save screenshot
-
-        Returns:
-            True if successful, False otherwise
-        """
+    def _take_screenshot(self, page: Page, output_path: Path) -> bool:
+        """Take screenshot (viewport or full page based on settings)"""
         try:
-            page.screenshot(path=str(output_path), full_page=True)
+            if self.viewport_only:
+                # MUCH FASTER: Only capture visible viewport
+                page.screenshot(path=str(output_path), full_page=False)
+            else:
+                # SLOWER: Capture entire page
+                page.screenshot(path=str(output_path), full_page=True)
             return True
         except Exception as e:
             with self.errors_lock:
@@ -89,16 +76,6 @@ class NewsScraper:
             return False
 
     def _save_html(self, page: Page, output_path: Path) -> bool:
-        """
-        Save page HTML content
-
-        Args:
-            page: Playwright page object
-            output_path: Path to save HTML
-
-        Returns:
-            True if successful, False otherwise
-        """
         try:
             html_content = page.content()
             with open(output_path, "w", encoding="utf-8") as f:
@@ -112,41 +89,25 @@ class NewsScraper:
     def scrape_url(
         self, url: str, index: int, page: Page, metadata: Dict
     ) -> Optional[Dict]:
-        """
-        Scrape a single URL
-
-        Args:
-            url: URL to scrape
-            index: Article index
-            page: Playwright page object
-            metadata: Original metadata from URL extraction
-
-        Returns:
-            Dictionary with scraping results or None if failed
-        """
         try:
-            # Navigate to URL - use domcontentloaded for faster loading
-            page.goto(url, timeout=self.timeout, wait_until="domcontentloaded")
+            # Navigate with fastest wait strategy
+            page.goto(url, timeout=self.timeout, wait_until="commit")
 
-            # Generate filename
+            # Minimal wait for rendering
+            page.wait_for_timeout(800)  # 0.8 seconds
+
             filename = self._generate_filename(url, index)
-
-            # Paths for outputs
             screenshot_path = self.screenshots_dir / f"{filename}.png"
             html_path = self.html_dir / f"{filename}.html"
 
-            # Take viewport screenshot (FASTER - first page only)
-            screenshot_success = self._take_full_page_screenshot(page, screenshot_path)
+            # Take screenshot
+            screenshot_success = self._take_screenshot(page, screenshot_path)
             if not screenshot_success:
-                with self.errors_lock:
-                    self.errors.append(f"Failed to capture screenshot: {url}")
                 return None
 
             # Save HTML
             html_success = self._save_html(page, html_path)
             if not html_success:
-                with self.errors_lock:
-                    self.errors.append(f"Failed to save HTML: {url}")
                 return None
 
             # Get page title
@@ -169,38 +130,49 @@ class NewsScraper:
             }
 
         except Exception as e:
-            # Log error
             with self.errors_lock:
                 self.errors.append(f"Scraping failed for {url}: {str(e)}")
             return None
 
     def _scrape_worker_standalone(self, url_data: Dict, total: int) -> Optional[Dict]:
-        """
-        Worker function for parallel scraping (each worker gets own browser)
-
-        Args:
-            url_data: Dictionary containing URL and metadata
-            total: Total number of URLs
-
-        Returns:
-            Scraping result or None
-        """
         url = url_data.get("url")
         idx = url_data.get("index", 0)
 
         if not url:
             return None
 
-        # Each worker creates its own playwright instance and browser
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=self.headless)
-            context = browser.new_context(
-                viewport={"width": 1920, "height": 1080},
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            )
-            page = context.new_page()
+        browser = None
+        try:
+            with sync_playwright() as p:
+                # Launch browser with performance flags
+                browser = p.chromium.launch(
+                    headless=self.headless,
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--disable-dev-shm-usage",
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-gpu",
+                        "--disable-software-rasterizer",
+                        "--disable-extensions",
+                        "--disable-plugins",
+                        # Performance flags
+                        "--disable-web-security",
+                        "--disable-features=IsolateOrigins,site-per-process",
+                        "--disable-default-apps",
+                        "--no-first-run",
+                        "--no-zygote",
+                    ],
+                )
 
-            try:
+                # Create context
+                context = browser.new_context(
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                )
+
+                page = context.new_page()
+
                 print(f"[{idx}/{total}] 🔄 Scraping: {url[:70]}...")
                 result = self.scrape_url(url, idx, page, url_data)
 
@@ -209,12 +181,27 @@ class NewsScraper:
                 else:
                     print(f"           ⏭️  Skipped")
 
-                return result
-            finally:
+                # Clean close
+                page.close()
+                context.close()
                 browser.close()
 
+                return result
+
+        except Exception as e:
+            with self.errors_lock:
+                self.errors.append(f"Worker error for {url}: {str(e)}")
+            return None
+        finally:
+            # Ensure browser closes
+            if browser:
+                try:
+                    browser.close()
+                except:
+                    pass
+
     def scrape_from_json(self, json_file: str = "extracted_urls.json") -> List[Dict]:
-        # Load URLs from JSON
+        start_time = time.perf_counter()
         try:
             with open(json_file, "r", encoding="utf-8") as f:
                 urls_data = json.load(f)
@@ -227,23 +214,23 @@ class NewsScraper:
             return []
 
         print(f"\n{'='*60}")
-        print(f"🌐 NEWS SCRAPER STARTED (OPTIMIZED)")
+        print(f"🌐 NEWS SCRAPER STARTED (STABLE + FAST)")
         print(f"{'='*60}")
         print(f"Total URLs to scrape: {len(urls_data)}")
         print(f"Parallel workers: {self.max_workers}")
         print(f"Headless mode: {self.headless}")
+        print(
+            f"Screenshot mode: {'VIEWPORT ONLY (Fast)' if self.viewport_only else 'FULL PAGE (Slow)'}"
+        )
         print(f"Output directory: {self.output_dir}")
         print(f"{'='*60}\n")
 
         results = []
 
-        # Add index to each URL data
         for idx, url_data in enumerate(urls_data, 1):
             url_data["index"] = idx
 
-        # Use ThreadPoolExecutor for parallel scraping
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # Submit all tasks
             future_to_url = {
                 executor.submit(
                     self._scrape_worker_standalone, url_data, len(urls_data)
@@ -251,13 +238,15 @@ class NewsScraper:
                 for url_data in urls_data
             }
 
-            # Collect results as they complete
             for future in as_completed(future_to_url):
-                result = future.result()
-                if result:
-                    results.append(result)
+                try:
+                    result = future.result()
+                    if result:
+                        results.append(result)
+                except Exception as e:
+                    with self.errors_lock:
+                        self.errors.append(f"Future error: {str(e)}")
 
-        # Sort results by index to maintain order
         results.sort(key=lambda x: x["index"])
 
         # Save results
@@ -265,7 +254,6 @@ class NewsScraper:
         with open(results_file, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
 
-        # Save error log
         if self.errors:
             error_log_file = self.logs_dir / "scraping_errors.log"
             with open(error_log_file, "w", encoding="utf-8") as f:
@@ -275,7 +263,6 @@ class NewsScraper:
                     f.write(f"{i}. {error}\n")
             print(f"\n⚠️  Error log saved to: {error_log_file}")
 
-        # Print summary
         print(f"\n{'='*60}")
         print(f"📊 SCRAPING COMPLETE")
         print(f"{'='*60}")
@@ -287,51 +274,30 @@ class NewsScraper:
         print(f"📄 HTML files saved to: {self.html_dir}")
         print(f"{'='*60}\n")
 
-        return results
-
-    def scrape_from_list(self, urls: List[Dict]) -> List[Dict]:
-        """
-        Scrape from a list of URL dictionaries
-
-        Args:
-            urls: List of dictionaries with 'url' key and optional metadata
-
-        Returns:
-            List of successfully scraped articles with metadata
-        """
-        # Save to temp JSON and scrape
-        temp_json = "temp_urls.json"
-        with open(temp_json, "w", encoding="utf-8") as f:
-            json.dump(urls, f, ensure_ascii=False, indent=2)
-
-        results = self.scrape_from_json(temp_json)
-
-        # Clean up temp file
-        try:
-            os.remove(temp_json)
-        except:
-            pass
+        end_time = time.perf_counter()
+        duration = end_time - start_time
+        avg_time = duration / len(urls_data) if urls_data else 0
+        print(f"\n⏱️  Total time: {duration:.2f} seconds ({duration/60:.2f} minutes)")
+        print(f"⚡ Average per URL: {avg_time:.2f} seconds")
 
         return results
 
 
 def main():
-    """Run the scraper with extracted URLs"""
-    # Check if extracted_urls.json exists
     if not os.path.exists("extracted_urls.json"):
         print("❌ Error: extracted_urls.json not found!")
         print("   Please run url_extractor.py first to generate URLs.")
         return
 
-    # Create scraper with parallel processing
+    # Create scraper with settings from top of file
     scraper = NewsScraper(
         output_dir="scraped_data",
         headless=True,
-        timeout=15000,  # 15 seconds timeout
-        max_workers=10,  # 5 parallel workers for speed
+        timeout=15000,  # 15 seconds
+        max_workers=worker_count,
+        viewport_only=USE_VIEWPORT_ONLY,
     )
 
-    # Scrape from JSON file
     results = scraper.scrape_from_json("extracted_urls.json")
 
 
