@@ -4,8 +4,9 @@ CREATE TABLE ilanlar (
     id SERIAL PRIMARY KEY,
     
     -- Temel
-    ilan_no VARCHAR(50) NOT NULL,         -- null olabilir
-    ilan_turu SMALLINT NOT NULL,          -- 1-10 arası
+    ticaret_sicil_no VARCHAR(50),
+    ilan_no VARCHAR(50) UNIQUE,
+    ilan_turu SMALLINT NOT NULL,          -- 1-11 arası
     
     -- Şirket
     mersis_no VARCHAR(16),
@@ -17,17 +18,13 @@ CREATE TABLE ilanlar (
     adres TEXT,
     
     -- Tarihler
-    tescil_tarihi DATE NOT NULL,           -- null olabilir
-    gazete_tarihi DATE,
+    tescil_tarihi DATE,
+    gazete_tarihi DATE,                   -- Ana sıralama bu alana göre yapılacak
     gazete_sayisi VARCHAR(20),
     
-    -- Detaylar
     detaylar JSONB DEFAULT '{}'
 );
 
--- İndeksler
-CREATE INDEX idx_il ON ilanlar(il);
-CREATE INDEX idx_unvan ON ilanlar USING gin(unvan gin_trgm_ops);
-CREATE INDEX idx_mersis ON ilanlar(mersis_no) WHERE mersis_no IS NOT NULL;
-CREATE INDEX idx_tescil ON ilanlar(tescil_tarihi DESC);
-CREATE INDEX idx_detaylar ON ilanlar USING gin(detaylar);
+CREATE INDEX idx_mersis ON ilanlar(mersis_no) WHERE mersis_no IS NOT NULL;  -- Sorgulama için
+CREATE INDEX idx_unvan ON ilanlar USING gin(unvan gin_trgm_ops);            -- Metin aramak için
+CREATE INDEX idx_gazete_tarihi ON ilanlar(gazete_tarihi DESC NULLS LAST);   -- Sıralama için
