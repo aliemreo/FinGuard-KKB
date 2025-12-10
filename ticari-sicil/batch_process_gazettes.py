@@ -815,8 +815,11 @@ def main():
     print(f"⏱ Pipeline started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
     # Configuration
-    gazette_dir = Path(r"c:\Users\aliem\Desktop\KKB\gazettes")
-    output_dir = Path(r"c:\Users\aliem\Desktop\KKB\gazette_outputs")
+    script_dir = Path(__file__).parent
+    gazette_dir = script_dir / "scraper" / "gazettes"
+    output_dir = script_dir / "gazette_outputs"
+    # gazette_dir = Path(r"c:\Users\aliem\Desktop\KKB\gazettes")
+    # output_dir = Path(r"c:\Users\aliem\Desktop\KKB\gazette_outputs")
 
     # Create directories
     print("📁 Setting up directories...")

@@ -1,0 +1,98 @@
+{
+  "gazette_metadata": {
+    "date": "27.9.2019",
+    "number": 9924,
+    "page": 1
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "gazette_date": "27.9.2019",
+        "gazette_number": 9924,
+        "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "08176080400001",
+        "company_name": "Telekom A.Ş.",
+        "announcement_number": null
+      },
+      "announcement_type": "toplantı_çağrısı",
+      "content": {
+        "Toplantı Çağrısı Bilgileri": {
+          "Sayfa": 1,
+          "Tarih": "27.09.2019",
+          "SayfaNo": 688,
+          "Konu": "Tedarikevi firmalar ile yazışmalar, kurul toplamaya ve gerekli cevapları vermeye",
+          "Şirket": "Telekom A.Ş.",
+          "Yetkili Personel": {
+            "AdSoyad": "Faruk Y.",
+            "MersisNo": "0613000528600012"
+          },
+          "Yönetim Kurulu Kararı": {
+            "KararTarihi": "30.09.2019",
+            "SayfaNo": 4,
+            "Kanun": "Kamu ihale Kanunu 21/21010"
+          },
+          "Yetki Sınıfları": {
+            "A": "Sınırsız temsil ve ilzam edilme yetkisi",
+            "B": "İç yönergenin yürürlükten kaldırılması, tescil ve ilan olunması ile yürürlüğe girmesi"
+          },
+          "İlan Sıra No": 43146,
+          "İlan Tarihi": "27.09.2019",
+          "Adres": {
+            "Şehir": "Ankara",
+            "Semt": "Çankaya"
+          }
+        }
+      },
+      "raw_text": null,
+      "extraction_success": true
+    },
+    {
+      "metadata": {
+        "gazette_date": "27.9.2019",
+        "gazette_number": 9924,
+        "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0613000528600012",
+        "company_name": "MASTER DANIŞMANLIK MÜMESSİLLİK VE TİCARET ANONİM ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "bileşik_değişiklik",
+      "content": {
+        "registered_matters": [
+          {
+            "description": "Tedarikçi firmalar ile yazışmalar almak, yazışmalarda bulunmak ve gerekli cevapları imzalamak",
+            "date": "27.9.2019"
+          },
+          {
+            "description": "Personellerin işe alınması, devretmesi ve kapatılması ile ilgili işlemler",
+            "date": "27.9.2019"
+          },
+          {
+            "description": "İlgili evrakların hazırlanması ve imzalanması",
+            "date": "27.9.2019"
+          }
+        ],
+        "registration_date": "30/09/2019",
+        "old_address": null,
+        "new_address": null,
+        "old_capital": null,
+        "new_capital": null,
+        "capital_breakdown": null,
+        "shareholders": null,
+        "notary_info": {
+          "name": "Faruk Y.",
+          "date": "27.06.2018"
+        }
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 2,
+    "successful_extractions": 2,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  }
+}
