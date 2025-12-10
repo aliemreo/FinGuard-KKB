@@ -1,0 +1,135 @@
+{
+  "gazette_metadata": {
+    "date": null,
+    "number": 11473,
+    "page": 1
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "gazette_date": null,
+        "gazette_number": 11473,
+        "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0608176080400001",
+        "company_name": "LETSA ENERJİ ANONİM ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "birleşme",
+      "content": {
+        "acquired_company": {
+          "name": "MERSİS No: 0481133794100001",
+          "mersis_no": "0481133794100001",
+          "registry_no": "529554",
+          "address": "Mustafa Kemal Mah. 2139 Cad. 3 Sıteşi Adalet No: 3 Çankaya / Ankara",
+          "city": "Ankara"
+        },
+        "acquiring_company": {
+          "name": "LETSА ENERJİ ANONİM ŞИRKETИ (20669595-20669596-20669597)",
+          "mersis_no": "0608176080400001",
+          "registry_no": "517585",
+          "address": "Mustafa Kemal Mah. 2131 Cad. 32 Sitesi No: 32 İç Kapı No: 3 Çankaya / Ankara",
+          "city": "Ankara"
+        },
+        "registration_date": "05.12.2025",
+        "deadline_for_creditors": "en geç üç ay içerisinde",
+        "creditor_application_address": "MUSTAFA KEMAL MAH. 2139 CAD. 3 SİTESİ ADALET NO: 3 İÇ KAPI NO: 9 ÇANKAYA / ANKARA",
+        "announcement_type": "Birleşme",
+        "announcement_number": null
+      },
+      "raw_text": null,
+      "extraction_success": true
+    },
+    {
+      "metadata": {
+        "gazette_date": null,
+        "gazette_number": 11473,
+        "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0153053881500002",
+        "company_name": "BAYKARA MİMARLIK YAPI İNŞAAT SANAYİ VE TİCARET LİMİTED ŞİRKETİ ANKARA ŞUBESİ",
+        "announcement_number": null
+      },
+      "announcement_type": "şube_kuruluşu",
+      "content": {
+        "parent_company_name": "BAYKARA MİMARLIK YAPI İNŞAAT SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+        "parent_company_mersis": "0153053881500001",
+        "parent_company_address": "INKILAP MAH. ÇEŞMİNAZ SK. MADILAN OFIS BLOK NO: 1-5 İÇ KAPI NO: 8 ÜMRANİYE / İSTANBUL",
+        "parent_company_capital": null,
+        "branch_name": "BAYKARA MİMARLIK YAPI İNŞAAT SANAYİ VE TİCARET LİMİTED ŞİRKETİ ANKARA ŞUBESİ",
+        "branch_address": "SUSUZ MAH. 5325 CAD. NO: 5 İÇ KAPI NO: 2 YENİMAHALLE / ANKARA",
+        "branch_manager": null,
+        "establishment_date": "2025-12-05"
+      },
+      "raw_text": null,
+      "extraction_success": true
+    },
+    {
+      "metadata": {
+        "gazette_date": null,
+        "gazette_number": 11473,
+        "registry_office": "ISTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0101006980600012",
+        "company_name": "MEBA DANIŞMANLIK LOJİSTİK GIDA SANAYİ TİCARET LİMİTED ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "bileşik_değişiklik",
+      "content": {
+        "registered_matters": [
+          {
+            "type": "address_change",
+            "old_address": "MERKEZ MAH.ÜMİT ÇIKMAZI SOK. NO.5 MALTEPE/İSTANBUL",
+            "new_address": "KÜÇÜKYALI MERKEZ MAH. GÖKKUŞAĞI SK. GÖKSU APT. A BLOK NO: 5 İÇ KAPI NO: 6 MALTEPE / İSTANBUL"
+          },
+          {
+            "type": "capital_change",
+            "old_capital": null,
+            "new_capital": "1000,00 Türk Lirası değerinde 580 paya ayrılmış toplam 580000,00 Türk Lirası değerindedir."
+          }
+        ],
+        "registration_date": "2025-12-05",
+        "old_address": "MERKEZ MAH.ÜMİT ÇIKMAZI SOK. NO.5 MALTEPE/İSTANBUL",
+        "new_address": "KÜÇÜKYALI MERKEZ MAH. GÖKKUŞAĞI SK. GÖKSU APT. A BLOK NO: 5 İÇ KAPI NO: 6 MALTEPE / İSTANBUL",
+        "old_capital": null,
+        "new_capital": "1000,00 Türk Lirası değerinde 580 paya ayrılmış toplam 580000,00 Türk Lirası değerindedir.",
+        "capital_breakdown": {
+          "shareholder": "GÜL DAĞLIOĞLU",
+          "old_shares": null,
+          "new_shares": "580 adet paya karşılık gelen 580000,00 Türk Lirası",
+          "payment_details": {
+            "amount_paid": "545.553, 56 TL",
+            "source_of_funds": [
+              "ENFLASYON DÜZELTMESİNDEN GELEN KARLARDAN",
+              "GEÇMİŞ YIL KARLARINDAN",
+              "nakden"
+            ],
+            "remaining_amount": "8.270, 21 TL'Sİ GEÇMİŞ YIL KARLARINDAN, 6.176, 23 TL'si nakden karşılanmıştır.",
+            "payment_term": "en geç yirmidört ay içinde ödenecektir."
+          }
+        },
+        "shareholders": [
+          {
+            "name": "GÜL DAĞLIOĞLU",
+            "shares": "580 adet paya karşılık gelen 580000,00 Türk Lirası"
+          }
+        ],
+        "notary_info": {
+          "notary_office": "Kadıköy 11. Noterliği",
+          "document_date": "2025-12-04",
+          "document_number": "14317",
+          "resolution_date": "2025-12-02",
+          "resolution_number": "1"
+        }
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 3,
+    "successful_extractions": 3,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  }
+}

@@ -1,0 +1,293 @@
+{
+  "gazette_metadata": {
+    "date": "21 Tarihli 2021",
+    "number": 10344,
+    "page": 1
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "gazette_date": "21 Tarihli 2021",
+        "gazette_number": 10344,
+        "registry_office": "TÜRKİYE TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0334053510100016",
+        "company_name": "EMTES ELEKTRİK ENERJİ PROJE TAAHHÜT SANAYİ VE TİCARET ANONİM ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "sermaye_taahhüdü",
+      "content": {
+        "ilan_sira_no": "99243",
+        "mersis_no": "0334053510100016",
+        "ticaret_sicil_dosya_no": "871730-0",
+        "şirket_adi": "EMTES ELEKTRİK ENERJİ PROJE TAAHHÜT SANAYİ VE TİCARET ANONİM ŞİRKETİ",
+        "adres": "Taşdelen, Cumhuriyet Mah.Onur Sk.No.2/4 D.5 Çekmeköy İstanbul",
+        "tescil_tarihi": "8.6.2021",
+        "tescil_edilen_hususlar": [
+          {
+            "tespit_raporu_no": "2021/1",
+            "tarih": "08/03/2021",
+            "muhasebeci_müşaviri": "SMMM CEM TOKSÖZ",
+            "sicil_no": "23056"
+          }
+        ],
+        "sermaye_artırımı": {
+          "eski_sermaye": "1.540.000,00 TL",
+          "yeni_sermaye": "1.000.000,00 TL",
+          "pay_sayısı": "1.540 adet",
+          "her_bir_pay_kiymeti": "1.000 TL",
+          "öz_sahip_e_alınan_sermae": {
+            "adedi": "1.540 paya karşılık",
+            "kiymeti": "1.540.000,00 TL"
+          },
+          "ödenmiş_e_alınan_sermae": {
+            "adedi": "540.000,00 TL"
+          },
+          "yatırım_kaynakları": [
+            {
+              "tarih": "10.3.2021",
+              "karadan_yeni_sermaye": "1.000.000,00 TL"
+            }
+          ]
+        }
+      },
+      "raw_text": null,
+      "extraction_success": true
+    },
+    {
+      "metadata": {
+        "gazette_date": "21 Tarihli 2021",
+        "gazette_number": 10344,
+        "registry_office": "TÜRKİYE TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0693054950700001",
+        "company_name": "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "bileşik_değişiklik",
+      "content": {
+        "registered_matters": [
+          {
+            "company_name": "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+            "changes": [
+              {
+                "type": "Pay Değişikliği",
+                "details": {
+                  "from_shareholder": {
+                    "name": "RAMAZAN DENİZHAN",
+                    "share": 1000000.0,
+                    "shares": 40000
+                  },
+                  "to_shareholder": {
+                    "name": "ALİ RÜZGAR",
+                    "share": 25000.0,
+                    "shares": 40000
+                  }
+                }
+              },
+              {
+                "type": "Müdür Değişikliği",
+                "details": {
+                  "removed_manager": {
+                    "name": "RAMAZAN DENİZHAN"
+                  },
+                  "added_manager": {
+                    "name": "ALİ RÜZGAR",
+                    "position": "Şube Müdürü"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "company_name": "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ",
+            "changes": [
+              {
+                "type": "Yetkililer Değişikliği",
+                "details": {
+                  "new_manager": {
+                    "name": "PAŞA ÖZEN",
+                    "position": "Şube Müdürü"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "registration_date": "2021-06-08",
+        "old_address": [
+          {
+            "company_name": "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+            "address": "Şirinevler Mah. Mahmutbey Cad. Imren Işhanı Blok No: 14d Bahçelievler /**, İstanbul"
+          },
+          {
+            "company_name": "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ",
+            "address": "Mustafa Kemal Mahallesi Dumlupınar Biv. B Blok Apt. No: 266 B/54, Çankaya/Ankara"
+          }
+        ],
+        "new_address": [],
+        "old_capital": [
+          {
+            "company_name": "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+            "capital": 1000000.0
+          },
+          {
+            "company_name": "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ",
+            "capital": null
+          }
+        ],
+        "new_capital": [],
+        "capital_breakdown": [
+          {
+            "company_name": "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+            "details": {
+              "shareholder": "ALİ RÜZGAR",
+              "share": 25000.0,
+              "shares": 40000
+            }
+          },
+          {
+            "company_name": "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ",
+            "details": null
+          }
+        ],
+        "shareholders": [
+          {
+            "name": "ALİ RÜZGAR",
+            "company_name": "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+            "shares": 40000,
+            "share": 25000.0
+          },
+          {
+            "name": "RAMAZAN DENİZHAN",
+            "company_name": "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+            "shares": 40000,
+            "share": 1000000.0
+          },
+          {
+            "name": "PAŞA ÖZEN",
+            "company_name": "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ",
+            "shares": 1,
+            "share": null
+          }
+        ],
+        "notary_info": [
+          {
+            "company_name": "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+            "notary_office": "Bakırköy 6.noterliği",
+            "document_date": "3.6.2021",
+            "document_number": "6247"
+          },
+          {
+            "company_name": "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ",
+            "notary_office": "Büyükçekmece 14. Nt.",
+            "document_date": "30.4.2021",
+            "document_number": "15638"
+          }
+        ]
+      },
+      "raw_text": null,
+      "extraction_success": true
+    },
+    {
+      "metadata": {
+        "gazette_date": "21 Tarihli 2021",
+        "gazette_number": 10344,
+        "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0154002214800020",
+        "company_name": "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ",
+        "announcement_number": null
+      },
+      "announcement_type": "adres_değişikliği",
+      "content": {
+        "announcement_type": "yetkili_degisikligi",
+        "summary": "This announcement details changes in the management and shareholders of two companies: Özgüven Yerel Gida Limited Şirketi and Baykar Makina Sanayi ve Ticaret Anonim Şirketi Ankara Şubesi.",
+        "company_info": {
+          "name": [
+            "ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ",
+            "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ"
+          ],
+          "mersis_no": [
+            "0693054950700001",
+            "0154002214800020"
+          ],
+          "address": [
+            "Şirinevler Mah. Mahmutbey Cad. Imren Işhanı Blok No: 14d Bahçelievler, Istanbul",
+            "Mustafa Kemal Mahallesi Dumlupınar Biv. B Blok Apt. No: 266 B/54 Çankaya/Ankara"
+          ]
+        },
+        "key_dates": {
+          "registration_date": [
+            "8.6.2021",
+            "8.6.2021"
+          ],
+          "effective_date": [
+            "8.6.2021",
+            "8.6.2021"
+          ]
+        },
+        "key_people": [
+          {
+            "name": "RAMAZAN DENİZHAN",
+            "role": "Ortağın payını devretti"
+          },
+          {
+            "name": "ALİ RÜZGAR",
+            "role": "Yeni ortak ve Müdür olarak seçildi"
+          },
+          {
+            "name": "PAŞA ÖZEN",
+            "role": "Yeni Şube Müdürü olarak atandı"
+          }
+        ],
+        "financial_info": [
+          {
+            "capital_change": "1.000.000.00 TL sermaye karşılığı 40000 adet payını hukuki ve mali yükümlülükleri ile 308******80 Kimlik Numaralı ALİ RÜZGAR'e devretmiştir."
+          }
+        ],
+        "legal_references": [
+          {
+            "notary_info": "Bakırköy 6.noterliği' Nin 3.6.2021 Tarih 6247 Sayı İle Tasdiklı, 3.6.2021 Tarıhlı 1 Sayılı Genel Kurul Kararı",
+            "law_reference": "Türk Ticaret Kanunu"
+          },
+          {
+            "notary_info": "Büyükçekmece 14. Nt. Nin 31.5.2021 Tarih 15638 Sayı İle Tasdiklı, (Karar), 30.4.2021 Tarıhli 2021/3 Sayılı Yönetim Kurulu Kararı"
+          }
+        ],
+        "changes_announced": [
+          {
+            "pay_devri": "Pay Değişikliği",
+            "mudur_degisimi": "Müdür görevi sona erdi: RAMAZAN DENİZHAN"
+          },
+          {
+            "yetkili_degisimi": "Şube Müdürü olarak atandı: PAŞA ÖZEN (30.4.2023 tarihine kadar)"
+          }
+        ],
+        "additional_info": [
+          "Özgüven Yerel Gida Limited Şirketi tek ortaklı birLimited Şirketidir."
+        ],
+        "raw_key_phrases": [
+          "pay devri",
+          "müdürler / yetkililer",
+          "tescil edildiği ilan olunur",
+          "Bakırköy 6.noterliği' Nin 3.6.2021 Tarih 6247 Sayı İle Tasdiklı, 3.6.2021 Tarıhlı 1 Sayılı Genel Kurul Kararı",
+          "Türk Ticaret Kanunu'na uygun olarak"
+        ],
+        "_extraction_method": "generic_fallback",
+        "_original_type": "yetkili_degisikligi",
+        "_is_fallback": true,
+        "_original_detected_type": "yetkili_degisikligi",
+        "_validation_error": "1 validation error for GazetteAnnouncement\nannouncement_type\n  Input should be 'şirket_emtiası_satışı', 'sermaye_azaltımı', 'mal_varlığı_devri', 'tasfiye', 'pay_senedi_değişimi', 'toplantı_çağrısı', '"
+      },
+      "raw_text": "## T.C. İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ'NDEN\n\n**İlan Sıra No: 99255**  \n**Mersis No: 0693054950700001**  \n**Ticaret Sici/Dosya No: 308470-5**  \n\n### ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ\n**Ticaret Unvanı:** ÖZGÜVEN YÖRESEL GIDA LİMİTED ŞİRKETİ\n**Adres : Şirinevler Mah. Mahmutbey Cad. Imren Işhanı Blok No: 14d Bahçelievler /**  \nİstanbul\nYukarıda bilgileri verilen şirket ile ilgili olarak aşağıda belirtilen hususlar müdürlüğümüze\nibraz edilen belgelere istinaden ve Türk Ticaret Kanunu'na uygun olarak 8.6.2021 tarihinde\ntescil edildiği ilan olunur.\n\n**Tescil Edilen Hususlar:** Pay Devri, Müdürler / Yetkililer\n\n**Tescile Delil Olan Belgeler:** Bakırköy 6.noterliği' Nin 3.6.2021 Tarih 6247 Sayı İle\nTasdiklı, 3.6.2021 Tarıhlı 1 Sayılı Genel Kurul Kararı\nPAY DEVRİ\nPay Değişikliği\nŞirket Ortaklarından 176******72  Kimlik Numaralı RAMAZAN DENİZHAN\n1.000.000.00 TL sermaye karşılığı 40000 adet payını hukuki ve mali yükümlülükleri ile\n308******80 Kimlik Numaralı ALİ RÜZGAR'e devretmiştir.\nTek Or",
+      "extraction_success": false
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 3,
+    "successful_extractions": 2,
+    "failed_extractions": 0,
+    "fallback_extractions": 1
+  }
+}

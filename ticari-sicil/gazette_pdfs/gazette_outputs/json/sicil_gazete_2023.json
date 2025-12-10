@@ -1,0 +1,130 @@
+{
+  "gazette_metadata": {
+    "date": "5 MAYIS 2023",
+    "number": 10825,
+    "page": 1
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "gazette_date": "5 MAYIS 2023",
+        "gazette_number": 10825,
+        "registry_office": "T.C. ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0154002214800020",
+        "company_name": "BAYKAR MAKİNA SANAYİ VE TİCARET ANONİM ŞİRKETİ ANKARA ŞUBESİ",
+        "announcement_number": null
+      },
+      "announcement_type": "bileşik_değişiklik",
+      "content": {
+        "registered_matters": [
+          {
+            "type": "New Temsilci",
+            "name": "CEMAL ÖKSÜZ",
+            "position": "Şube Müdürü",
+            "term_end_date": "1.4.2025"
+          },
+          {
+            "type": "Change in Position",
+            "previous_position": "Şube Müdürü",
+            "former_name": "PAŞA ÖZEN",
+            "status": "Görev sona erdi"
+          }
+        ],
+        "registration_date": "5.5.2023",
+        "old_address": {
+          "address": "ANKARA / ÇANKAYA adresinde ikamet eden",
+          "name": "PAŞA ÖZEN"
+        },
+        "new_address": {
+          "address": "Türkiye Uyruklu 698******74 Kimlik No'lu, İSTANBUL / BAKIRKÖY adresinde ikamet eden",
+          "name": "CEMAL ÖKSÜZ"
+        },
+        "old_capital": null,
+        "new_capital": null,
+        "capital_breakdown": null,
+        "shareholders": null,
+        "notary_info": {
+          "document_type": "Tasdiklı",
+          "date": "14.4.2023",
+          "number": "11892 Sayı",
+          "title": "Yönetim Kurulu Kararı",
+          "year": "2023/05"
+        }
+      },
+      "raw_text": null,
+      "extraction_success": true
+    },
+    {
+      "metadata": {
+        "gazette_date": "5 MAYIS 2023",
+        "gazette_number": 10825,
+        "registry_office": "T.C. ÇANAKKALE TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0084023394700011",
+        "company_name": "ARSLANLAR SİĞGORTA ARACILIK HİZMETLERİ LİMİTED ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "bileşik_değişiklik",
+      "content": {
+        "registered_matters": [
+          {
+            "type": "Müdürlere/Yetkililer",
+            "details": [
+              {
+                "name": "İLYAS ARSLAN",
+                "id_number": "343******54",
+                "address": "ÇANAKKALE / MERKEZ",
+                "position": "Müdür",
+                "term_end_date": "3.5.2033",
+                "powers": "Münferiden Temsile Yetkilidir"
+              }
+            ]
+          }
+        ],
+        "registration_date": "5.5.2023",
+        "old_address": "",
+        "new_address": "Kepez Beldesi Cumhuriyet Mah. Yeni İzmir Yolu Cad. Arslanlar Sigorta Ltd.Şti. Blok No: 92-1 İç Kapı No: 1- Merkez / Çanakkale",
+        "old_capital": "",
+        "new_capital": "",
+        "capital_breakdown": "",
+        "shareholders": [],
+        "notary_info": {
+          "notary_office": "Çanakkale 4. Noterliği",
+          "document_number": "3.5.2023 Tarih 4332 Sayılı Genel Kurul Kararı",
+          "registration_date": "3.5.2023"
+        }
+      },
+      "raw_text": null,
+      "extraction_success": true
+    },
+    {
+      "metadata": {
+        "gazette_date": "5 MAYIS 2023",
+        "gazette_number": 10825,
+        "registry_office": "T.C. İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0010214854400001",
+        "company_name": "AHENK GÜZELLİK MEDİKAL VE SAĞLIK HİZMETLERİ LİMİTED ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "şube_kuruluşu",
+      "content": {
+        "parent_company_name": "AHENK GÜZELLİK MEDİKAL VE SAĞLIK HİZMETLERİ LİMİTED ŞİRKETİ",
+        "parent_company_mersis": "0010214854400001",
+        "parent_company_address": "Fevzi Çakmak Mah. Girne Cad. Kaptan Oğulları Apt. No: 43 İç Kapı No: 8, Pendik / İstanbul",
+        "branch_name": null,
+        "branch_address": null,
+        "establishment_date": "2023-05-05"
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 3,
+    "successful_extractions": 3,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  }
+}
