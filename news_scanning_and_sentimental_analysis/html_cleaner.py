@@ -44,6 +44,12 @@ class HTMLCleaner:
             for pattern in [
                 r"Çerez Politikası.*?Kabul Et",
                 r"Cookie Policy.*?Accept",
+                r"Çerez Politikası",
+                r"Gizlilik Politikası",
+                r"En iyi hizmet",
+                r"Detaylar için",
+                r"0850",
+                r"Müşteri İletişim Merkezi",
                 r"Reklam\s*\d*",
                 r"Advertisement\s*\d*",
                 r"Paylaş.*?Facebook.*?Twitter.*?WhatsApp",
