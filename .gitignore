@@ -1,4 +1,5 @@
 .vscode/
 scraped_data/
+training_data/
 extracted_urls.json
 sentiment_results.json
