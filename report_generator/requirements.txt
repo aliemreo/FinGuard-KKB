@@ -1,0 +1,17 @@
+# KKB Hackathon - Firma Raporu Oluşturma Sistemi
+# Python Bağımlılıkları
+python-dotenv
+
+# Database
+psycopg2-binary==2.9.9
+
+# OpenAI API
+openai==1.12.0
+
+# PDF Generation
+WeasyPrint
+
+Jinja2==3.1.3
+
+# Utilities
+python-dateutil==2.8.2
