@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
 worker_count = 25  # Number of parallel workers
-USE_VIEWPORT_ONLY = True
+USE_VIEWPORT_ONLY = False
 
 
 class NewsScraper:
