@@ -2,5 +2,6 @@
 scraped_data/
 training_data/
 extracted_urls.json
+merged_results.json
 sentiment_results.json
 mDeBERTa_finetuned_for_english_turkish_news_articles/
