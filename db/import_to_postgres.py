@@ -8,10 +8,15 @@ Requirements:
     pip install psycopg2-binary
 """
 
-import json
-import psycopg2
-from psycopg2.extras import Json
+import os
+import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load env from root directory (2 levels up)
+root_dir = Path(__file__).parent.parent
+env_path = root_dir / '.env'
+load_dotenv(dotenv_path=env_path)
 from datetime import datetime
 from typing import List, Dict, Any
 
@@ -20,12 +25,15 @@ from typing import List, Dict, Any
 # ============================================================================
 
 # Update these with your PostgreSQL credentials
+# You can also set these via environment variables
+import os
+
 DB_CONFIG = {
-    'dbname': 'gazette_db',
-    'user': 'postgres',
-    'password': '383418',
-    'host': 'localhost',
-    'port': 5432
+    'dbname': os.getenv('DB_NAME', 'gazette_db'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', '1234'),  # ← CHANGE THIS or set DB_PASSWORD env var
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': int(os.getenv('DB_PORT', 5432))
 }
 
 # ============================================================================
@@ -326,7 +334,12 @@ def main():
 
     # Determine paths
     script_dir = Path(__file__).parent
-    json_dir = script_dir / 'gazette_outputs' / 'json'
+    # Default to the TTSG_Agent output directory relative to this script
+    default_json_dir = script_dir.parent / 'TTSG_Agent' / 'OCR_outputs' / 'json'
+    
+    # Allow overriding via environment variable
+    json_dir_env = os.getenv("GAZETTE_JSON_DIR")
+    json_dir = Path(json_dir_env) if json_dir_env else default_json_dir
 
     if not json_dir.exists():
         print(f"[✗] JSON directory not found: {json_dir}")
