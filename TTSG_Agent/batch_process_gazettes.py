@@ -26,7 +26,10 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 # Load environment variables
-load_dotenv()
+# Load environment variables from root
+root_dir = Path(__file__).parent.parent
+env_path = root_dir / '.env'
+load_dotenv(dotenv_path=env_path)
 
 from layout_detector import analyze_page_layout, surya_layout_ocr
 

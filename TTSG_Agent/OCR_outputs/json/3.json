@@ -17,10 +17,13 @@
       },
       "announcement_type": "toplantı_çağrısı",
       "content": {
+        "source": "Türkiye Ticaret Sicili Gazetesi",
+        "announcement_date": "2025-04-30",
+        "page": 1,
         "company": {
           "legal_name": "BULLS GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI ANONİM ŞİRKETİ",
-          "trade_name": "BULLS GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş.",
-          "trade_register_number": "318982-5",
+          "trade_name": "BULLS GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI ANONİM ŞİRKETİ",
+          "trade_register_no": "318982-5",
           "address": "Levent Mah. Bambu Sokak No:5 Beşiktaş/İstanbul",
           "website": "https://bullsgirisim.com"
         },
@@ -29,87 +32,28 @@
           "date": "2025-05-26",
           "day_of_week": "Monday",
           "time": "14:00",
-          "location": {
-            "address": "Esentepe Mahallesi, Büyükdere Cd. No: 173, 1. Levent Plaza B, Kat: 4, Şişli, İstanbul"
-          },
-          "announcement_page": "Sayfa 1",
-          "announcement_number": null,
-          "publication_date": "2025-04-30",
-          "publication_page": "11322"
+          "location": "Esentepe Mahallesi, Büyükdere Cad. No:173, 1. Levent Plaza B, Kat:4, Şişli, İstanbul",
+          "notice_period": "En az üç hafta önceden şirket merkezi, kurumsal internet sitesi, Kamuyu Aydınlatma Platformu ve Elektronik Genel Kurul sisteminde erişilebilir olacaktır."
         },
         "agenda_items": [
-          {
-            "item_no": 1,
-            "description": "Açılış ve Toplantı Başkanlığının seçimi"
-          },
-          {
-            "item_no": 2,
-            "description": "Toplantı tutanağının imzalanması hususunda Toplantı Başkanlığı'na yetki verilmesi"
-          },
-          {
-            "item_no": 3,
-            "description": "2024 yılı hesap dönemine ilişkin Yönetim Kurulu Faaliyet Raporunun okunması, müzakere edilmesi ve onaylanması"
-          },
-          {
-            "item_no": 4,
-            "description": "2024 yılı hesap dönemine ilişkin Bağımsız Denetim Rapor özetinin okunması ve görüşülmesi"
-          },
-          {
-            "item_no": 5,
-            "description": "2024 yılı hesap dönemine ilişkin Finansal Tabloların okunması, müzakere edilmesi ve onaylanması"
-          },
-          {
-            "item_no": 6,
-            "description": "2024 yılı faaliyetlerinden dolayı Yönetim Kurulu üyelerinin ayrı ayrı ibrası"
-          },
-          {
-            "item_no": 7,
-            "description": "Yönetim Kurulu Üyelerine verilecek ücret/huzur hakkı, ikramiye ve prim gibi hakların belirlenmesi"
-          },
-          {
-            "item_no": 8,
-            "description": "Şirket'in kar dağıtım politikası çerçevesinde, Yönetim Kurulunun 2024 yılı hesap dönemi kar dağıtımı önerisinin görüşülerek kabulü, değiştirilerek kabulü veya reddi"
-          },
-          {
-            "item_no": 9,
-            "description": "2025 yılı hesap dönemi için Türk Ticaret Kanunu, Sermaye Piyasası Kurulu ve Kamu Gözetimi, Muhasebe ve Denetim Standartları Kurumu düzenlemeleri gereğince Yönetim Kurulu tarafından yapılan bağımsız denetim kuruluşu seçiminin onaylanması"
-          },
-          {
-            "item_no": 10,
-            "description": "Yönetim kontrolünü elinde bulunduran Pay Sahiplerine, Yönetim Kurulu Üyelerine, üst düzey yöneticilere ve bunların eş ve ikinci dereceye kadar kan ve sıhri yakınlarına; Türk Ticaret Kanunu'nun 395 ve 396'ncı maddeleri çerçevesinde izin verilmesi ve Sermaye Piyasası Kurulu Kurumsal Yönetim Tebliği doğrultusunda 2024 yılı içerisinde bu kapsamda gerçekleştirilen işlemler hakkında Pay Sahiplerine bilgi verilmesi"
-          },
-          {
-            "item_no": 11,
-            "description": "Sermaye Piyasası Kurulu'nun 11-221 sayılı Geri Alınan Paylar Tebliği ve ilgili düzenlemeler çerçevesinde 24.03.2025 tarih ve 10 sayılı Yönetim Kurulu kararıyla başlatılan pay geri alım programı hususunda Genel Kurul'a bilgi verilmesi"
-          }
+          "Açılış ve Toplantı Başkanlığının seçimi",
+          "Toplantı tutanağının imzalanması hususunda Toplantı Başkanlığı'na yetki verilmesi",
+          "2024 yılı hesap dönemine ilişkin Yönetim Kurulu Faaliyet Raporunun okunması, müzakere edilmesi ve onaylanması",
+          "2024 yılı hesap dönemine ilişkin Bağımsız Denetim Rapor özetinin okunması ve görüşülmesi",
+          "2024 yılı hesap dönemine ilişkin Finansal Tabloların okunması, müzakere edilmesi ve onaylanması",
+          "2024 yılı faaliyetlerinden dolayı Yönetim Kurulu üyelerinin ayrı ayrı ibrası",
+          "Yönetim Kurulu Üyelerine verilecek ücret/huzur hakkı, ikramiye ve prim gibi hakların belirlenmesi",
+          "Şirket'in kar dağıtım politikası çerçevesinde, Yönetim Kurulunun 2024 yılı hesap dönemi kar dağıtımı önerisinin görüşülerek kabulü, değiştirilerek kabulü veya reddi",
+          "2025 yılı hesap dönemi için bağımsız denetim kuruluşu seçiminin onaylanması (Türk Ticaret Kanunu, SPK ve KPMGSTK düzenlemeleri kapsamında)",
+          "Yönetim kontrolünü elinde bulunduran Pay Sahiplerine, Yönetim Kurulu Üyelerine, üst düzey yöneticilere ve bunların eş ve ikinci dereceye kadar kan ve sıhri yakınlarına, Türk Ticaret Kanunu’nun 395‑396. maddeleri çerçevesinde izin verilmesi ve SPK Kurumsal Yönetim Tebliği doğrultusunda 2024 yılı içinde gerçekleştirilen işlemler hakkında bilgi verilmesi",
+          "Sermaye Piyasası Kurulu’nun 11‑221 sayılı Geri Alınan Paylar Tebliği ve ilgili düzenlemeler çerçevesinde 24.03.2025 tarih ve 10 sayılı Yönetim Kurulu kararıyla başlatılan pay geri alım programı hususunda Genel Kurul’a bilgi verilmesi"
         ],
-        "proxy_and_electronic_voting": {
-          "proxy_required": true,
-          "proxy_form": "Noter onaylı, SPK 11-30.1 sayılı Vekaleten Oy Kullanılması ve Çağrı Yoluyla Vekalet Toplanması Tebliği'ne uygun örnek",
-          "electronic_voting_allowed": true,
-          "electronic_voting_method": "Elektronik Genel Kurul Sistemi üzerinden; vekil atanmışsa ek vekalet belgesi ibrazı gerekmez",
-          "electronic_voting_deadline": "Toplantıdan en az üç hafta önce şirket merkezi, kurumsal internet sitesi, Kamuyu Aydınlatma Platformu ve Elektronik Genel Kurul sisteminde belgeler incelenebilir"
-        },
-        "document_availability": {
-          "financial_statements": true,
-          "independent_audit_report": true,
-          "profit_distribution_table": true,
-          "activity_report_spk_compliant": true,
-          "power_of_attorney_form": true,
-          "agenda_and_related_announcements": true,
-          "availability_start": "2025-05-05",
-          "note": "En az üç hafta öncesi (tahmini) toplantı tarihinden geriye doğru hesaplanmıştır",
-          "availability_end": "2025-05-26"
-        },
-        "legal_references": [
-          "6102 sayılı Türk Ticaret Kanunu, madde 415/4",
-          "Sermaye Piyasası Kanunu, madde 30/1",
-          "SPK 11-30.1 sayılı Vekaleten Oy Kullanılması ve Çağrı Yoluyla Vekalet Toplanması Tebliği",
-          "Türk Ticaret Kanunu, maddeler 395‑396",
-          "Sermaye Piyasası Kurulu Kurumsal Yönetim Tebliği",
-          "SPK 11-221 sayılı Geri Alınan Paylar Tebliği"
-        ],
-        "notes": "Pay sahiplerinin paylarını bloke etmelerine gerek yoktur; katılım ve oy kullanma hakkı pay senetlerinin depo edilmesine bağlı değildir."
+        "additional_notes": [
+          "Toplantıya bizzat katılamayan pay sahipleri, Elektronik Genel Kurul Sistemi üzerinden elektronik yöntemle katılabilir; vekaletname örneğine uygun noter onaylı vekaletname sunulmalıdır.",
+          "Elektronik Genel Kurul Sistemi üzerinden atanmış vekil için ek vekalet belgesi ibrazı gerekmez.",
+          "Pay sahiplerinin genel kurula katılım ve oy kullanma hakkı, pay senetlerinin depo edilmesine bağlı değildir; paylarını bloke etmelerine gerek yoktur.",
+          "Oy kullanma yöntemi el kaldırma usulü ile açık oylama olarak uygulanacaktır; elektronik oy kullanma imkanı da saklıdır."
+        ]
       },
       "raw_text": null,
       "extraction_success": true
