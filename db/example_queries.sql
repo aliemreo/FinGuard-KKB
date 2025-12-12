@@ -1,307 +1,351 @@
 -- ============================================================================
--- EXAMPLE QUERIES FOR GAZETTE DATABASE
+-- EXAMPLE QUERIES FOR İLANLAR DATABASE
 -- ============================================================================
 -- Copy and paste these queries into psql or your SQL client
+--
+-- İlan Türleri (1-11):
+--   1 = Kuruluş           6 = Şube
+--   2 = Yönetim/Temsil    7 = Tasfiye
+--   3 = Sermaye/Pay       8 = İflas/Konkordato
+--   4 = Sözleşme/Merkez   9 = Devir
+--   5 = Yapısal Değişiklik 10 = Çağrı/Bildirim
+--                         11 = Düzeltme
 
 -- ============================================================================
 -- BASIC QUERIES
 -- ============================================================================
 
--- 1. Get all announcements (with gazette info)
-SELECT * FROM v_successful_announcements
-ORDER BY gazette_number DESC
-LIMIT 10;
+-- 1. Get all announcements (newest first)
+SELECT id, unvan, ilan_turu, mersis_no, il, gazete_tarihi
+FROM ilanlar
+ORDER BY gazete_tarihi DESC NULLS LAST
+LIMIT 20;
 
 -- 2. Count announcements by type
-SELECT announcement_type, COUNT(*) as count
-FROM announcements
-GROUP BY announcement_type
+SELECT ilan_turu, COUNT(*) as count
+FROM ilanlar
+GROUP BY ilan_turu
 ORDER BY count DESC;
 
 -- 3. Get all announcements from a specific gazette
-SELECT a.company_name, a.announcement_type, a.content
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-WHERE g.gazette_number = 10344
-ORDER BY a.id;
+SELECT unvan, ilan_turu, mersis_no, detaylar
+FROM ilanlar
+WHERE gazete_sayisi = '10344'
+ORDER BY id;
 
 -- ============================================================================
--- MERGER ANNOUNCEMENTS (birleşme)
+-- FILTER BY ANNOUNCEMENT TYPE (ilan_turu)
 -- ============================================================================
 
--- 4. Get all merger announcements with company details
-SELECT
-    a.company_name as announced_by,
-    a.content->'acquiring_company'->>'name' as acquiring_company,
-    a.content->'acquired_company'->>'name' as acquired_company,
-    a.content->>'registration_date' as registration_date,
-    a.content->>'deadline_for_creditors' as creditor_deadline,
-    g.gazette_number,
-    g.gazette_date
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-WHERE a.announcement_type = 'birleşme'
-ORDER BY g.gazette_number DESC;
+-- 4. Get establishment announcements (kuruluş - type 1)
+SELECT unvan, mersis_no, il, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 1
+ORDER BY gazete_tarihi DESC NULLS LAST
+LIMIT 50;
 
--- 5. Find mergers in a specific city
-SELECT
-    a.company_name,
-    a.content->'acquiring_company'->>'name' as acquiring_company,
-    a.content->'acquiring_company'->>'city' as city
-FROM announcements a
-WHERE a.announcement_type = 'birleşme'
-  AND a.content->'acquiring_company'->>'city' = 'ANKARA';
+-- 5. Get management/representation changes (yönetim/temsil - type 2)
+SELECT unvan, mersis_no, il, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 2
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
--- ============================================================================
--- ADDRESS CHANGES (adres_değişikliği)
--- ============================================================================
+-- 6. Get capital changes (sermaye/pay - type 3)
+SELECT unvan, mersis_no, il, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 3
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
--- 6. Get all address changes with old and new addresses
-SELECT
-    a.company_name,
-    a.mersis_no,
-    a.content->>'old_address' as old_address,
-    a.content->>'new_address' as new_address,
-    a.content->>'change_date' as change_date,
-    g.gazette_number
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-WHERE a.announcement_type = 'adres_değişikliği'
-ORDER BY g.gazette_number DESC;
+-- 7. Get address/contract changes (sözleşme/merkez - type 4)
+SELECT unvan, mersis_no, il, ilce, adres, gazete_tarihi
+FROM ilanlar
+WHERE ilan_turu = 4
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
--- 7. Find companies that moved to a specific district
-SELECT
-    company_name,
-    content->>'new_address' as new_address
-FROM announcements
-WHERE announcement_type = 'adres_değişikliği'
-  AND content->>'new_address' ILIKE '%Çankaya%';
+-- 8. Get structural changes: mergers, splits (yapısal değişiklik - type 5)
+SELECT unvan, mersis_no, il, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 5
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
--- ============================================================================
--- COMPOUND CHANGES (bileşik_değişiklik)
--- ============================================================================
+-- 9. Get branch operations (şube - type 6)
+SELECT unvan, mersis_no, il, ilce, adres, gazete_tarihi
+FROM ilanlar
+WHERE ilan_turu = 6
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
--- 8. Get all compound changes with details
-SELECT
-    a.company_name,
-    a.content->>'registered_matters' as registered_matters,
-    a.content->>'new_address' as new_address,
-    a.content->>'new_capital' as new_capital,
-    g.gazette_number
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-WHERE a.announcement_type = 'bileşik_değişiklik'
-ORDER BY g.gazette_number DESC;
+-- 10. Get liquidation announcements (tasfiye - type 7)
+SELECT unvan, mersis_no, il, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 7
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
--- 9. Find capital increases in compound changes
-SELECT
-    company_name,
-    content->>'old_capital' as old_capital,
-    content->>'new_capital' as new_capital,
-    content->'new_capital'->>'amount' as new_capital_amount
-FROM announcements
-WHERE announcement_type = 'bileşik_değişiklik'
-  AND content ? 'new_capital'
-  AND content->'new_capital' IS NOT NULL;
+-- 11. Get bankruptcy/concordato announcements (iflas/konkordato - type 8)
+SELECT unvan, mersis_no, il, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 8
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
 -- ============================================================================
--- BRANCH ESTABLISHMENTS (şube_kuruluşu)
+-- FILTER BY CITY (il - plaka codes 1-81)
 -- ============================================================================
 
--- 10. Get all branch establishments
-SELECT
-    a.company_name,
-    a.content->>'branch_name' as branch_name,
-    a.content->>'branch_address' as branch_address,
-    g.gazette_number
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-WHERE a.announcement_type = 'şube_kuruluşu'
-ORDER BY g.gazette_number DESC;
+-- 12. Get all announcements from Istanbul (plaka 34)
+SELECT unvan, ilan_turu, mersis_no, ilce, gazete_tarihi
+FROM ilanlar
+WHERE il = 34
+ORDER BY gazete_tarihi DESC NULLS LAST
+LIMIT 50;
+
+-- 13. Get all announcements from Ankara (plaka 6)
+SELECT unvan, ilan_turu, mersis_no, ilce, gazete_tarihi
+FROM ilanlar
+WHERE il = 6
+ORDER BY gazete_tarihi DESC NULLS LAST
+LIMIT 50;
+
+-- 14. Get all announcements from Izmir (plaka 35)
+SELECT unvan, ilan_turu, mersis_no, ilce, gazete_tarihi
+FROM ilanlar
+WHERE il = 35
+ORDER BY gazete_tarihi DESC NULLS LAST;
+
+-- 15. Statistics by city
+SELECT il, COUNT(*) as count
+FROM ilanlar
+GROUP BY il
+ORDER BY count DESC
+LIMIT 20;
 
 -- ============================================================================
 -- COMPANY SEARCH
 -- ============================================================================
 
--- 11. Search company by name (partial match)
-SELECT
-    a.company_name,
-    a.mersis_no,
-    a.announcement_type,
-    g.gazette_number,
-    g.gazette_date
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-WHERE a.company_name ILIKE '%BAYKAR%'
-ORDER BY g.gazette_number DESC;
+-- 16. Search company by name (partial match)
+SELECT id, unvan, mersis_no, ilan_turu, il, gazete_tarihi
+FROM ilanlar
+WHERE unvan ILIKE '%BAYKAR%'
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
--- 12. Get all announcements for a specific MERSİS number
-SELECT * FROM get_company_announcements('0334053510100016');
+-- 17. Get all announcements for a specific MERSİS number
+SELECT id, unvan, ilan_turu, gazete_tarihi, gazete_sayisi, detaylar
+FROM ilanlar
+WHERE mersis_no = '0334053510100016'
+ORDER BY gazete_tarihi DESC NULLS LAST;
 
--- 13. Find companies with multiple announcements
+-- 18. Find companies with multiple announcements
 SELECT
-    company_name,
+    unvan,
     mersis_no,
     COUNT(*) as announcement_count,
-    array_agg(DISTINCT announcement_type) as types
-FROM announcements
-WHERE company_name IS NOT NULL
-GROUP BY company_name, mersis_no
+    array_agg(DISTINCT ilan_turu) as types
+FROM ilanlar
+GROUP BY unvan, mersis_no
 HAVING COUNT(*) > 1
-ORDER BY announcement_count DESC;
+ORDER BY announcement_count DESC
+LIMIT 20;
+
+-- 19. Get company by registry number
+SELECT id, unvan, mersis_no, ilan_turu, gazete_tarihi
+FROM ilanlar
+WHERE ticaret_sicil_no = '12345'
+ORDER BY gazete_tarihi DESC;
 
 -- ============================================================================
 -- STATISTICS & ANALYTICS
 -- ============================================================================
 
--- 14. Announcement statistics by type
-SELECT * FROM v_announcement_type_stats;
+-- 20. Total count
+SELECT COUNT(*) as total_ilanlar FROM ilanlar;
 
--- 15. Most active companies
-SELECT * FROM v_company_activity
-ORDER BY announcement_count DESC
+-- 21. Announcement statistics by type with names
+SELECT
+    ilan_turu,
+    CASE ilan_turu
+        WHEN 1 THEN 'Kuruluş'
+        WHEN 2 THEN 'Yönetim/Temsil'
+        WHEN 3 THEN 'Sermaye/Pay'
+        WHEN 4 THEN 'Sözleşme/Merkez'
+        WHEN 5 THEN 'Yapısal Değişiklik'
+        WHEN 6 THEN 'Şube'
+        WHEN 7 THEN 'Tasfiye'
+        WHEN 8 THEN 'İflas/Konkordato'
+        WHEN 9 THEN 'Devir'
+        WHEN 10 THEN 'Çağrı/Bildirim'
+        WHEN 11 THEN 'Düzeltme'
+        ELSE 'Bilinmiyor'
+    END as ilan_turu_adi,
+    COUNT(*) as count
+FROM ilanlar
+GROUP BY ilan_turu
+ORDER BY count DESC;
+
+-- 22. Most active cities
+SELECT
+    il,
+    COUNT(*) as total_announcements,
+    COUNT(DISTINCT unvan) as unique_companies
+FROM ilanlar
+GROUP BY il
+ORDER BY total_announcements DESC
+LIMIT 15;
+
+-- 23. Gazette publication volume
+SELECT
+    gazete_sayisi,
+    gazete_tarihi,
+    COUNT(*) as announcement_count
+FROM ilanlar
+WHERE gazete_sayisi IS NOT NULL
+GROUP BY gazete_sayisi, gazete_tarihi
+ORDER BY gazete_tarihi DESC NULLS LAST
 LIMIT 20;
 
--- 16. Registry office activity
+-- 24. Monthly distribution
 SELECT
-    registry_office,
-    COUNT(*) as total_announcements,
-    COUNT(DISTINCT company_name) as unique_companies,
-    COUNT(DISTINCT announcement_type) as announcement_types
-FROM announcements
-WHERE registry_office IS NOT NULL
-GROUP BY registry_office
-ORDER BY total_announcements DESC;
-
--- 17. Gazette publication volume
-SELECT
-    gazette_number,
-    gazette_date,
+    DATE_TRUNC('month', gazete_tarihi) as month,
     COUNT(*) as announcement_count
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-GROUP BY gazette_number, gazette_date
-ORDER BY gazette_number DESC;
+FROM ilanlar
+WHERE gazete_tarihi IS NOT NULL
+GROUP BY month
+ORDER BY month DESC;
 
--- ============================================================================
--- EXTRACTION QUALITY
--- ============================================================================
-
--- 18. View fallback extractions (unknown types)
-SELECT * FROM v_fallback_extractions;
-
--- 19. Extraction quality summary
+-- 25. Type distribution by city (top 5 cities)
 SELECT
-    COUNT(*) as total,
-    SUM(CASE WHEN extraction_success AND NOT is_fallback THEN 1 ELSE 0 END) as successful,
-    SUM(CASE WHEN is_fallback THEN 1 ELSE 0 END) as fallback,
-    SUM(CASE WHEN NOT extraction_success THEN 1 ELSE 0 END) as failed,
-    ROUND(100.0 * SUM(CASE WHEN extraction_success AND NOT is_fallback THEN 1 ELSE 0 END) / COUNT(*), 2) as success_rate
-FROM announcements;
-
--- 20. Quality by source file
-SELECT
-    g.source_file,
-    COUNT(*) as total,
-    SUM(CASE WHEN a.extraction_success AND NOT a.is_fallback THEN 1 ELSE 0 END) as successful,
-    SUM(CASE WHEN a.is_fallback THEN 1 ELSE 0 END) as fallback
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-GROUP BY g.source_file
-ORDER BY g.source_file;
+    il,
+    ilan_turu,
+    COUNT(*) as count
+FROM ilanlar
+WHERE il IN (34, 6, 35, 16, 7)  -- Istanbul, Ankara, Izmir, Bursa, Antalya
+GROUP BY il, ilan_turu
+ORDER BY il, count DESC;
 
 -- ============================================================================
 -- ADVANCED JSONB QUERIES
 -- ============================================================================
 
--- 21. Find all unique keys in content JSONB
-SELECT DISTINCT jsonb_object_keys(content) as content_keys
-FROM announcements
-ORDER BY content_keys;
+-- 26. Find all unique keys in detaylar JSONB
+SELECT DISTINCT jsonb_object_keys(detaylar) as detaylar_keys
+FROM ilanlar
+WHERE detaylar IS NOT NULL AND detaylar != '{}'
+ORDER BY detaylar_keys;
 
--- 22. Pretty print JSONB content for a specific announcement
+-- 27. Pretty print JSONB content for a specific announcement
 SELECT
-    company_name,
-    jsonb_pretty(content) as formatted_content
-FROM announcements
+    unvan,
+    jsonb_pretty(detaylar) as formatted_detaylar
+FROM ilanlar
 WHERE id = 1;
 
--- 23. Search for announcements with specific JSONB field
-SELECT company_name, content
-FROM announcements
-WHERE content ? 'deadline_for_creditors'  -- Has this field
+-- 28. Search for announcements with specific JSONB field
+SELECT unvan, detaylar
+FROM ilanlar
+WHERE detaylar ? 'deadline_for_creditors'
 ORDER BY id DESC;
 
--- 24. Extract shareholders from compound changes
+-- 29. Get value from JSONB field
 SELECT
-    company_name,
-    jsonb_array_elements(content->'shareholders')->>'name' as shareholder_name,
-    jsonb_array_elements(content->'shareholders')->>'shares' as shares
-FROM announcements
-WHERE content ? 'shareholders'
-  AND jsonb_typeof(content->'shareholders') = 'array';
+    unvan,
+    detaylar->>'acquiring_company' as acquiring_company,
+    detaylar->>'registration_date' as registration_date
+FROM ilanlar
+WHERE ilan_turu = 5  -- Yapısal değişiklik
+  AND detaylar ? 'acquiring_company';
 
--- 25. Search by notary information
+-- 30. Search in nested JSONB
 SELECT
-    company_name,
-    content->'notary_info'->>'notary_name' as notary,
-    content->'notary_info'->>'document_date' as document_date
-FROM announcements
-WHERE content->'notary_info' IS NOT NULL
-  AND content->'notary_info'->>'notary_name' ILIKE '%Beyoğlu%';
+    unvan,
+    detaylar->'acquiring_company'->>'name' as acquiring_company_name
+FROM ilanlar
+WHERE detaylar->'acquiring_company'->>'name' IS NOT NULL;
 
 -- ============================================================================
--- TIME-BASED QUERIES
+-- DATE-BASED QUERIES
 -- ============================================================================
 
--- 26. Announcements imported today
-SELECT COUNT(*) FROM announcements
-WHERE DATE(created_at) = CURRENT_DATE;
+-- 31. Recent announcements (last 30 days)
+SELECT id, unvan, ilan_turu, il, gazete_tarihi
+FROM ilanlar
+WHERE gazete_tarihi >= CURRENT_DATE - INTERVAL '30 days'
+ORDER BY gazete_tarihi DESC;
 
--- 27. Import timeline
+-- 32. Announcements in a date range
+SELECT id, unvan, ilan_turu, il, gazete_tarihi
+FROM ilanlar
+WHERE gazete_tarihi BETWEEN '2024-01-01' AND '2024-12-31'
+ORDER BY gazete_tarihi DESC;
+
+-- 33. Announcements by day of week
 SELECT
-    DATE(created_at) as import_date,
-    COUNT(*) as announcements_imported
-FROM announcements
-GROUP BY DATE(created_at)
-ORDER BY import_date DESC;
+    EXTRACT(DOW FROM gazete_tarihi) as day_of_week,
+    COUNT(*) as count
+FROM ilanlar
+WHERE gazete_tarihi IS NOT NULL
+GROUP BY day_of_week
+ORDER BY day_of_week;
 
 -- ============================================================================
 -- DATA EXPORT EXAMPLES
 -- ============================================================================
 
--- 28. Export mergers to CSV (run in psql)
--- \copy (SELECT company_name, content->'acquiring_company'->>'name' as acquiring_company, content->>'registration_date' as registration_date FROM announcements WHERE announcement_type = 'birleşme') TO 'mergers.csv' WITH CSV HEADER;
+-- 34. Export to CSV (run in psql)
+-- \copy (SELECT unvan, mersis_no, ilan_turu, il, gazete_tarihi FROM ilanlar) TO 'ilanlar.csv' WITH CSV HEADER;
 
--- 29. Export all announcements for a company
--- \copy (SELECT * FROM get_company_announcements('0334053510100016')) TO 'company_announcements.csv' WITH CSV HEADER;
+-- 35. Export specific type to CSV
+-- \copy (SELECT * FROM ilanlar WHERE ilan_turu = 1) TO 'kurulus_ilanlari.csv' WITH CSV HEADER;
+
+-- 36. Export for a specific city
+-- \copy (SELECT * FROM ilanlar WHERE il = 34) TO 'istanbul_ilanlari.csv' WITH CSV HEADER;
 
 -- ============================================================================
 -- USEFUL UTILITY QUERIES
 -- ============================================================================
 
--- 30. Database size
+-- 37. Database size
 SELECT pg_size_pretty(pg_database_size('gazette_db')) as database_size;
 
--- 31. Table row counts
+-- 38. Table row count and size
 SELECT
-    'gazettes' as table_name,
-    COUNT(*) as row_count
-FROM gazettes
-UNION ALL
-SELECT
-    'announcements' as table_name,
-    COUNT(*) as row_count
-FROM announcements;
+    pg_size_pretty(pg_total_relation_size('ilanlar')) as table_size,
+    (SELECT COUNT(*) FROM ilanlar) as row_count;
 
--- 32. Index usage statistics
+-- 39. Index usage statistics
 SELECT
-    schemaname,
-    tablename,
     indexname,
     idx_scan as index_scans,
-    idx_tup_read as tuples_read,
-    idx_tup_fetch as tuples_fetched
+    idx_tup_read as tuples_read
 FROM pg_stat_user_indexes
-WHERE schemaname = 'public'
+WHERE tablename = 'ilanlar'
 ORDER BY idx_scan DESC;
+
+-- 40. Find duplicate entries (by ilan_no)
+SELECT ilan_no, COUNT(*) as count
+FROM ilanlar
+WHERE ilan_no IS NOT NULL
+GROUP BY ilan_no
+HAVING COUNT(*) > 1;
+
+-- ============================================================================
+-- COMBINED FILTERS
+-- ============================================================================
+
+-- 41. Establishments in Istanbul in the last year
+SELECT unvan, mersis_no, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 1
+  AND il = 34
+  AND gazete_tarihi >= CURRENT_DATE - INTERVAL '1 year'
+ORDER BY gazete_tarihi DESC;
+
+-- 42. Liquidations in Ankara
+SELECT unvan, mersis_no, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 7
+  AND il = 6
+ORDER BY gazete_tarihi DESC;
+
+-- 43. All changes for companies starting with specific letter
+SELECT unvan, ilan_turu, mersis_no, gazete_tarihi
+FROM ilanlar
+WHERE unvan LIKE 'A%'
+ORDER BY unvan, gazete_tarihi DESC;

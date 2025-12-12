@@ -5,11 +5,13 @@ This script reads JSON files from gazette_outputs/json/ and imports them
 into a PostgreSQL database following the schema defined in database_schema.sql
 
 Requirements:
-    pip install psycopg2-binary
+    pip install psycopg2-binary python-dotenv
 """
 
 import os
 import sys
+import json
+import re
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -17,28 +19,151 @@ from dotenv import load_dotenv
 root_dir = Path(__file__).parent.parent
 env_path = root_dir / '.env'
 load_dotenv(dotenv_path=env_path)
+
+import psycopg2
+from psycopg2.extras import Json
 from datetime import datetime
-from typing import List, Dict, Any
-
-# ============================================================================
-# DATABASE CONFIGURATION
-# ============================================================================
-
-# Update these with your PostgreSQL credentials
-# You can also set these via environment variables
-import os
+from typing import Dict, Any, Optional
 
 DB_CONFIG = {
     'dbname': os.getenv('DB_NAME', 'gazette_db'),
     'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', '1234'),  # ← CHANGE THIS or set DB_PASSWORD env var
+    'password': os.getenv('DB_PASSWORD', '1234'),
     'host': os.getenv('DB_HOST', 'localhost'),
     'port': int(os.getenv('DB_PORT', 5432))
 }
 
-# ============================================================================
-# IMPORT FUNCTIONS
-# ============================================================================
+ILAN_TURU_MAP = {
+    # 1 = Kuruluş
+    'kuruluş': 1, 'kurulus': 1, 'yeni_kayit': 1, 'açılış': 1,
+    # 2 = Yönetim/Temsil
+    'yönetim': 2, 'temsil': 2, 'müdür_atama': 2, 'imza_yetkisi': 2, 'iç_yönerge': 2,
+    # 3 = Sermaye/Pay
+    'sermaye': 3, 'sermaye_artırımı': 3, 'sermaye_azaltımı': 3, 'pay_devri': 3,
+    # 4 = Sözleşme/Merkez
+    'adres_değişikliği': 4, 'unvan_değişikliği': 4, 'merkez_nakli': 4, 'tadil': 4,
+    'bileşik_değişiklik': 4,
+    # 5 = Yapısal Değişiklik
+    'birleşme': 5, 'bölünme': 5, 'tür_değiştirme': 5, 'yapısal_değişiklik': 5,
+    # 6 = Şube
+    'şube': 6, 'şube_açılış': 6, 'şube_kapanış': 6, 'şube_kuruluşu': 6,
+    # 7 = Tasfiye
+    'tasfiye': 7, 'tasfiyeye_giriş': 7, 'tasfiye_sonu': 7, 'sona_erme': 7,
+    # 8 = İflas/Konkordato
+    'iflas': 8, 'konkordato': 8, 'iflas_kararı': 8, 'konkordato_mühleti': 8,
+    # 9 = Devir
+    'devir': 9, 'işletme_devri': 9,
+    # 10 = Çağrı/Bildirim
+    'genel_kurul': 10, 'çağrı': 10, 'bildirim': 10, 'alacaklılara_çağrı': 10,
+    'toplantı_çağrısı': 10,
+    # 11 = Düzeltme
+    'düzeltme': 11, 'ilan_düzeltme': 11,
+}
+
+TURKISH_MONTHS = {
+    'OCAK': 1, 'ŞUBAT': 2, 'MART': 3, 'NİSAN': 4, 'NISAN': 4,
+    'MAYIS': 5, 'HAZİRAN': 6, 'HAZIRAN': 6, 'TEMMUZ': 7, 'AĞUSTOS': 8, 'AGUSTOS': 8,
+    'EYLÜL': 9, 'EYLUL': 9, 'EKİM': 10, 'EKIM': 10, 'KASIM': 11, 'ARALIK': 12
+}
+
+IL_KODLARI = {
+    'adana': 1, 'adıyaman': 2, 'afyon': 3, 'afyonkarahisar': 3, 'ağrı': 4,
+    'amasya': 5, 'ankara': 6, 'antalya': 7, 'artvin': 8, 'aydın': 9,
+    'balıkesir': 10, 'bilecik': 11, 'bingöl': 12, 'bitlis': 13, 'bolu': 14,
+    'burdur': 15, 'bursa': 16, 'çanakkale': 17, 'çankırı': 18, 'çorum': 19,
+    'denizli': 20, 'diyarbakır': 21, 'edirne': 22, 'elazığ': 23, 'erzincan': 24,
+    'erzurum': 25, 'eskişehir': 26, 'gaziantep': 27, 'giresun': 28, 'gümüşhane': 29,
+    'hakkari': 30, 'hatay': 31, 'isparta': 32, 'mersin': 33, 'içel': 33,
+    'istanbul': 34, 'İstanbul': 34, 'izmir': 35, 'İzmir': 35, 'kars': 36, 
+    'kastamonu': 37, 'kayseri': 38, 'kırklareli': 39, 'kırşehir': 40, 
+    'kocaeli': 41, 'konya': 42, 'kütahya': 43, 'malatya': 44, 'manisa': 45, 
+    'kahramanmaraş': 46, 'mardin': 47, 'muğla': 48, 'muş': 49, 'nevşehir': 50, 
+    'niğde': 51, 'ordu': 52, 'rize': 53, 'sakarya': 54, 'samsun': 55, 
+    'siirt': 56, 'sinop': 57, 'sivas': 58, 'tekirdağ': 59, 'tokat': 60, 
+    'trabzon': 61, 'tunceli': 62, 'şanlıurfa': 63, 'uşak': 64, 'van': 65, 
+    'yozgat': 66, 'zonguldak': 67, 'aksaray': 68, 'bayburt': 69, 'karaman': 70, 
+    'kırıkkale': 71, 'batman': 72, 'şırnak': 73, 'bartın': 74, 'ardahan': 75, 
+    'iğdır': 76, 'yalova': 77, 'karabük': 78, 'kilis': 79, 'osmaniye': 80, 
+    'düzce': 81
+}
+
+def get_ilan_turu_code(announcement_type: str) -> int:
+    """Convert announcement type string to SMALLINT code (1-11)"""
+    if not announcement_type:
+        return 11
+    normalized = announcement_type.lower().strip().replace(' ', '_')
+    return ILAN_TURU_MAP.get(normalized, 11)
+
+def get_il_code(city_name: str) -> int:
+    """Convert city name to plaka code (1-81)"""
+    if not city_name:
+        return 34  # Default to Istanbul
+    normalized = city_name.lower().strip()
+    return IL_KODLARI.get(normalized, 34)
+
+def extract_city_from_registry_office(registry_office: str) -> str:
+    """Extract city name from registry office string like 'T.C. İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ'"""
+    if not registry_office:
+        return ''
+    
+    # Remove common prefixes
+    text = registry_office.upper()
+    text = re.sub(r'^T\.?C\.?\s*', '', text)  # Remove T.C. prefix
+    
+    # Try to find a known city name
+    for city in IL_KODLARI.keys():
+        city_upper = city.upper()
+        if city_upper in text:
+            return city
+    
+    # Fallback: take first word
+    words = text.split()
+    if words:
+        return words[0].lower()
+    return ''
+
+def parse_turkish_date(date_str: str) -> Optional[str]:
+    """Parse Turkish date format like '30 EKIM 2024' to 'YYYY-MM-DD'"""
+    if not date_str:
+        return None
+    
+    # Try pattern: "DD MONTH YYYY"
+    match = re.match(r'(\d{1,2})\s+([A-ZÇĞİÖŞÜa-zçğıöşü]+)\s+(\d{4})', date_str.strip())
+    if match:
+        day, month_name, year = match.groups()
+        month_num = TURKISH_MONTHS.get(month_name.upper())
+        if month_num:
+            return f"{year}-{month_num:02d}-{int(day):02d}"
+    
+    return None
+
+def parse_date(date_str: Optional[str]) -> Optional[str]:
+    """Parse various date formats to YYYY-MM-DD"""
+    if not date_str:
+        return None
+    
+    date_str = date_str.strip()
+    
+    # Try Turkish format first (e.g., "30 EKIM 2024")
+    turkish_result = parse_turkish_date(date_str)
+    if turkish_result:
+        return turkish_result
+    
+    # Try standard formats
+    formats = [
+        '%Y-%m-%d',      # 2024-10-30
+        '%d.%m.%Y',      # 30.10.2024
+        '%d/%m/%Y',      # 30/10/2024
+        '%Y/%m/%d',      # 2024/10/30
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt).strftime('%Y-%m-%d')
+        except ValueError:
+            continue
+    
+    return None
 
 def connect_to_db():
     """Connect to PostgreSQL database"""
@@ -53,7 +178,6 @@ def connect_to_db():
 def create_database_if_not_exists():
     """Create the database if it doesn't exist"""
     try:
-        # Connect to default 'postgres' database
         conn = psycopg2.connect(
             dbname='postgres',
             user=DB_CONFIG['user'],
@@ -64,7 +188,6 @@ def create_database_if_not_exists():
         conn.autocommit = True
         cursor = conn.cursor()
 
-        # Check if database exists
         cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{DB_CONFIG['dbname']}'")
         exists = cursor.fetchone()
 
@@ -104,75 +227,83 @@ def initialize_schema(conn):
         conn.rollback()
         return False
 
-def insert_gazette(cursor, gazette_metadata: Dict[str, Any], source_file: str) -> int:
-    """Insert gazette metadata and return gazette_id"""
-    query = """
-        INSERT INTO gazettes (gazette_number, gazette_date, page_number, source_file)
-        VALUES (%s, %s, %s, %s)
-        ON CONFLICT (gazette_number, page_number)
-        DO UPDATE SET
-            gazette_date = EXCLUDED.gazette_date,
-            source_file = EXCLUDED.source_file
-        RETURNING id
-    """
-
-    cursor.execute(query, (
-        gazette_metadata.get('number'),
-        gazette_metadata.get('date'),
-        gazette_metadata.get('page'),
-        source_file
-    ))
-
-    gazette_id = cursor.fetchone()[0]
-    return gazette_id
-
-def insert_announcement(cursor, gazette_id: int, announcement: Dict[str, Any]):
-    """Insert a single announcement"""
+def insert_ilan(cursor, announcement: Dict[str, Any], gazette_metadata: Dict[str, Any]) -> Optional[int]:
+    """Insert a single ilan (announcement) into the ilanlar table.
+    Returns None if ilan_no is missing (record skipped)."""
+    
     metadata = announcement.get('metadata', {})
     content = announcement.get('content', {})
-
-    # Check if this is a fallback extraction
-    is_fallback = content.get('_is_fallback', False)
-    original_type = content.get('_original_detected_type')
-    extraction_method = content.get('_extraction_method')
-
+    
+    # ilan_no is REQUIRED - skip if null
+    ilan_no = metadata.get('announcement_number')
+    if not ilan_no:
+        return None  # Skip this record
+    
+    # Extract fields
+    ticaret_sicil_no = metadata.get('registry_number')
+    if ticaret_sicil_no == 'Unknown':
+        ticaret_sicil_no = None
+        
+    ilan_turu = get_ilan_turu_code(announcement.get('announcement_type'))
+    
+    mersis_no = metadata.get('mersis_no')
+    if mersis_no == 'Unknown':
+        mersis_no = None
+        
+    unvan = metadata.get('company_name') or 'Bilinmiyor'
+    
+    # Get city from registry_office
+    registry_office = metadata.get('registry_office', '')
+    city = content.get('city') or extract_city_from_registry_office(registry_office)
+    il = get_il_code(city)
+    
+    ilce = content.get('district')
+    adres = content.get('new_address') or content.get('address')
+    tescil_tarihi = parse_date(content.get('registration_date') or content.get('change_date'))
+    gazete_tarihi = parse_date(gazette_metadata.get('date'))
+    gazete_sayisi = str(gazette_metadata.get('number', ''))
+    
+    # Store remaining content as detaylar JSONB
+    excluded_keys = {'city', 'district', 'new_address', 'address', 'registration_date', 'change_date'}
+    detaylar = {k: v for k, v in content.items() 
+                if k not in excluded_keys and not k.startswith('_') and v is not None}
+    
     query = """
-        INSERT INTO announcements (
-            gazette_id,
-            registry_office,
-            registry_number,
-            mersis_no,
-            company_name,
-            announcement_number,
-            announcement_type,
-            content,
-            raw_text,
-            extraction_success,
-            is_fallback,
-            original_detected_type,
-            extraction_method
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO ilanlar (
+            ticaret_sicil_no, ilan_no, ilan_turu, mersis_no, unvan,
+            il, ilce, adres, tescil_tarihi, gazete_tarihi, gazete_sayisi, detaylar
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (ilan_no) DO UPDATE SET
+            ticaret_sicil_no = EXCLUDED.ticaret_sicil_no,
+            ilan_turu = EXCLUDED.ilan_turu,
+            mersis_no = EXCLUDED.mersis_no,
+            unvan = EXCLUDED.unvan,
+            il = EXCLUDED.il,
+            ilce = EXCLUDED.ilce,
+            adres = EXCLUDED.adres,
+            tescil_tarihi = EXCLUDED.tescil_tarihi,
+            gazete_tarihi = EXCLUDED.gazete_tarihi,
+            gazete_sayisi = EXCLUDED.gazete_sayisi,
+            detaylar = EXCLUDED.detaylar
         RETURNING id
     """
 
     cursor.execute(query, (
-        gazette_id,
-        metadata.get('registry_office'),
-        metadata.get('registry_number'),
-        metadata.get('mersis_no'),
-        metadata.get('company_name'),
-        metadata.get('announcement_number'),
-        announcement.get('announcement_type'),
-        Json(content),  # Convert dict to JSONB
-        announcement.get('raw_text'),
-        announcement.get('extraction_success', True),
-        is_fallback,
-        original_type,
-        extraction_method
+        ticaret_sicil_no,
+        ilan_no,
+        ilan_turu,
+        mersis_no,
+        unvan,
+        il,
+        ilce,
+        adres,
+        tescil_tarihi,
+        gazete_tarihi,
+        gazete_sayisi,
+        Json(detaylar) if detaylar else Json({})
     ))
 
-    announcement_id = cursor.fetchone()[0]
-    return announcement_id
+    return cursor.fetchone()[0]
 
 def import_json_file(conn, json_path: Path) -> Dict[str, int]:
     """Import a single JSON file into the database"""
@@ -181,37 +312,29 @@ def import_json_file(conn, json_path: Path) -> Dict[str, int]:
             data = json.load(f)
 
         cursor = conn.cursor()
-
-        # Insert gazette metadata
-        gazette_id = insert_gazette(
-            cursor,
-            data.get('gazette_metadata', {}),
-            json_path.name
-        )
-
-        # Insert announcements
+        gazette_metadata = data.get('gazette_metadata', {})
         announcements = data.get('announcements', [])
+        
         stats = {
             'total': len(announcements),
-            'successful': 0,
-            'fallback': 0,
-            'failed': 0
+            'imported': 0,
+            'skipped_no_ilan_no': 0,
+            'errors': 0
         }
 
         for announcement in announcements:
-            announcement_id = insert_announcement(cursor, gazette_id, announcement)
-
-            if announcement.get('extraction_success', True):
-                if announcement.get('content', {}).get('_is_fallback', False):
-                    stats['fallback'] += 1
+            try:
+                result = insert_ilan(cursor, announcement, gazette_metadata)
+                if result is None:
+                    stats['skipped_no_ilan_no'] += 1
                 else:
-                    stats['successful'] += 1
-            else:
-                stats['failed'] += 1
+                    stats['imported'] += 1
+            except Exception as e:
+                print(f"    [!] Error: {e}")
+                stats['errors'] += 1
 
         conn.commit()
         cursor.close()
-
         return stats
 
     except Exception as e:
@@ -225,16 +348,16 @@ def import_all_json_files(conn, json_dir: Path):
 
     if not json_files:
         print(f"[!] No JSON files found in {json_dir}")
-        return
+        return None
 
     print(f"\n[→] Found {len(json_files)} JSON file(s) to import\n")
 
     total_stats = {
         'files': 0,
-        'total_announcements': 0,
-        'successful': 0,
-        'fallback': 0,
-        'failed': 0
+        'total': 0,
+        'imported': 0,
+        'skipped_no_ilan_no': 0,
+        'errors': 0
     }
 
     for idx, json_path in enumerate(json_files, 1):
@@ -243,16 +366,16 @@ def import_all_json_files(conn, json_dir: Path):
         try:
             stats = import_json_file(conn, json_path)
 
-            print(f"    ✓ Successful:  {stats['successful']}")
-            print(f"    ⚠ Fallback:    {stats['fallback']}")
-            print(f"    ✗ Failed:      {stats['failed']}")
-            print(f"    Total:         {stats['total']}\n")
+            print(f"    ✓ Imported:        {stats['imported']}")
+            print(f"    ⊘ Skipped (no ID): {stats['skipped_no_ilan_no']}")
+            print(f"    ✗ Errors:          {stats['errors']}")
+            print(f"    Total:             {stats['total']}\n")
 
             total_stats['files'] += 1
-            total_stats['total_announcements'] += stats['total']
-            total_stats['successful'] += stats['successful']
-            total_stats['fallback'] += stats['fallback']
-            total_stats['failed'] += stats['failed']
+            total_stats['total'] += stats['total']
+            total_stats['imported'] += stats['imported']
+            total_stats['skipped_no_ilan_no'] += stats['skipped_no_ilan_no']
+            total_stats['errors'] += stats['errors']
 
         except Exception as e:
             print(f"    [✗] Import failed: {e}\n")
@@ -268,76 +391,52 @@ def print_database_stats(conn):
     print("DATABASE STATISTICS")
     print("="*80)
 
-    # Total gazettes
-    cursor.execute("SELECT COUNT(*) FROM gazettes")
-    gazette_count = cursor.fetchone()[0]
-    print(f"\nTotal Gazettes: {gazette_count}")
+    cursor.execute("SELECT COUNT(*) FROM ilanlar")
+    ilan_count = cursor.fetchone()[0]
+    print(f"\nTotal İlanlar: {ilan_count}")
 
-    # Total announcements
-    cursor.execute("SELECT COUNT(*) FROM announcements")
-    announcement_count = cursor.fetchone()[0]
-    print(f"Total Announcements: {announcement_count}")
-
-    # Announcements by type
     cursor.execute("""
-        SELECT announcement_type, COUNT(*) as count
-        FROM announcements
-        GROUP BY announcement_type
+        SELECT ilan_turu, COUNT(*) as count
+        FROM ilanlar
+        GROUP BY ilan_turu
         ORDER BY count DESC
     """)
 
-    print("\nAnnouncements by Type:")
+    ilan_turu_names = {
+        1: 'Kuruluş', 2: 'Yönetim/Temsil', 3: 'Sermaye/Pay',
+        4: 'Sözleşme/Merkez', 5: 'Yapısal Değişiklik', 6: 'Şube',
+        7: 'Tasfiye', 8: 'İflas/Konkordato', 9: 'Devir',
+        10: 'Çağrı/Bildirim', 11: 'Düzeltme'
+    }
+
+    print("\nİlanlar by Type:")
     for row in cursor.fetchall():
-        print(f"  {row[0]:<30s}: {row[1]:3d}")
+        type_name = ilan_turu_names.get(row[0], f'Unknown ({row[0]})')
+        print(f"  {type_name:<25s}: {row[1]:3d}")
 
-    # Extraction stats
     cursor.execute("""
-        SELECT
-            SUM(CASE WHEN extraction_success AND NOT is_fallback THEN 1 ELSE 0 END) as successful,
-            SUM(CASE WHEN is_fallback THEN 1 ELSE 0 END) as fallback,
-            SUM(CASE WHEN NOT extraction_success THEN 1 ELSE 0 END) as failed
-        FROM announcements
-    """)
-
-    row = cursor.fetchone()
-    print("\nExtraction Quality:")
-    print(f"  ✓ Successful: {row[0]:3d}")
-    print(f"  ⚠ Fallback:   {row[1]:3d}")
-    print(f"  ✗ Failed:     {row[2]:3d}")
-
-    # Top companies by announcement count
-    cursor.execute("""
-        SELECT company_name, COUNT(*) as count
-        FROM announcements
-        WHERE company_name IS NOT NULL
-        GROUP BY company_name
+        SELECT il, COUNT(*) as count
+        FROM ilanlar
+        GROUP BY il
         ORDER BY count DESC
         LIMIT 10
     """)
 
-    print("\nTop 10 Companies by Announcements:")
-    for idx, row in enumerate(cursor.fetchall(), 1):
-        company_name = row[0][:60] + '...' if len(row[0]) > 60 else row[0]
-        print(f"  {idx:2d}. {company_name:<60s}: {row[1]:2d}")
+    print("\nTop 10 Cities (by plaka code):")
+    for row in cursor.fetchall():
+        print(f"  İl {row[0]:2d}: {row[1]:3d}")
 
     cursor.close()
     print("="*80 + "\n")
-
-# ============================================================================
-# MAIN
-# ============================================================================
 
 def main():
     print("="*80)
     print("GAZETTE JSON → POSTGRESQL IMPORT TOOL")
     print("="*80)
 
-    # Determine paths
     script_dir = Path(__file__).parent
-    # Default to the TTSG_Agent output directory relative to this script
     default_json_dir = script_dir.parent / 'TTSG_Agent' / 'OCR_outputs' / 'json'
     
-    # Allow overriding via environment variable
     json_dir_env = os.getenv("GAZETTE_JSON_DIR")
     json_dir = Path(json_dir_env) if json_dir_env else default_json_dir
 
@@ -346,43 +445,36 @@ def main():
         return
 
     print(f"\nJSON Directory: {json_dir}")
-    print(f"Database: {DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}\n")
+    print(f"Database: {DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}")
+    print(f"\n[!] Note: Records with null announcement_number will be skipped.\n")
 
-    # Ask for confirmation
-    response = input("Initialize schema (will drop existing tables)? [y/N]: ")
+    response = input("Initialize schema (will drop existing table)? [y/N]: ")
     initialize_schema_flag = response.lower() == 'y'
 
     try:
-        # Create database if needed
         create_database_if_not_exists()
-
-        # Connect to database
         conn = connect_to_db()
 
-        # Initialize schema if requested
         if initialize_schema_flag:
             if not initialize_schema(conn):
                 print("[✗] Schema initialization failed. Aborting.")
                 return
 
-        # Import JSON files
         total_stats = import_all_json_files(conn, json_dir)
 
         if total_stats:
             print("\n" + "="*80)
             print("IMPORT SUMMARY")
             print("="*80)
-            print(f"Files imported:       {total_stats['files']}")
-            print(f"Total announcements:  {total_stats['total_announcements']}")
-            print(f"  ✓ Successful:       {total_stats['successful']}")
-            print(f"  ⚠ Fallback:         {total_stats['fallback']}")
-            print(f"  ✗ Failed:           {total_stats['failed']}")
+            print(f"Files processed:       {total_stats['files']}")
+            print(f"Total announcements:   {total_stats['total']}")
+            print(f"  ✓ Imported:          {total_stats['imported']}")
+            print(f"  ⊘ Skipped (no ID):   {total_stats['skipped_no_ilan_no']}")
+            print(f"  ✗ Errors:            {total_stats['errors']}")
             print("="*80)
 
-        # Print database statistics
         print_database_stats(conn)
 
-        # Close connection
         conn.close()
         print("[✓] Import complete. Database connection closed.")
 

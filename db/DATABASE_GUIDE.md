@@ -4,40 +4,41 @@ This guide explains how to set up and use the PostgreSQL database for storing Tu
 
 ## Database Schema
 
-### Tables
+### Table: `ilanlar`
 
-#### 1. `gazettes`
-Stores gazette metadata (one row per gazette page).
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | SERIAL | Primary key |
-| gazette_number | INTEGER | Gazette issue number |
-| gazette_date | VARCHAR(100) | Publication date (Turkish format) |
-| page_number | INTEGER | Page number |
-| source_file | VARCHAR(255) | Original JSON filename |
-| processed_at | TIMESTAMP | Import timestamp |
-
-#### 2. `announcements`
-Stores individual company announcements.
+A single table storing all gazette announcements.
 
 | Column | Type | Description |
 |--------|------|-------------|
 | id | SERIAL | Primary key |
-| gazette_id | INTEGER | Foreign key to gazettes |
-| registry_office | VARCHAR(255) | Trade registry office |
-| registry_number | VARCHAR(50) | Registry number |
+| ticaret_sicil_no | VARCHAR(50) | Trade registry number |
+| ilan_no | VARCHAR(50) | Unique announcement number |
+| ilan_turu | SMALLINT | Announcement type (1-11) |
 | mersis_no | VARCHAR(16) | MERSİS identification number |
-| company_name | VARCHAR(500) | Company name |
-| announcement_number | VARCHAR(50) | Announcement number |
-| announcement_type | VARCHAR(100) | Type (merger, address change, etc.) |
-| **content** | **JSONB** | **Type-specific data (flexible)** |
-| raw_text | TEXT | Original OCR text (if available) |
-| extraction_success | BOOLEAN | Extraction succeeded? |
-| is_fallback | BOOLEAN | Used fallback extractor? |
-| original_detected_type | VARCHAR(100) | Original type (if fallback) |
-| extraction_method | VARCHAR(50) | Extraction method used |
-| created_at | TIMESTAMP | Import timestamp |
+| unvan | VARCHAR(500) | Company name |
+| il | SMALLINT | City code (plaka: 1-81) |
+| ilce | VARCHAR(100) | District |
+| adres | TEXT | Address |
+| tescil_tarihi | DATE | Registration date |
+| gazete_tarihi | DATE | Gazette publication date |
+| gazete_sayisi | VARCHAR(20) | Gazette issue number |
+| detaylar | JSONB | Additional details (flexible) |
+
+### İlan Türleri (Announcement Types)
+
+| Code | Category | Description |
+|------|----------|-------------|
+| 1 | Kuruluş | Yeni Şirket/İşletme Açılışı |
+| 2 | Yönetim/Temsil | Müdür/YK Atama, İmza Yetkisi, İç Yönerge |
+| 3 | Sermaye/Pay | Sermaye Artırımı/Azaltımı, Hisse Devri |
+| 4 | Sözleşme/Merkez | Adres Değişikliği, Unvan Değişikliği, Tadil |
+| 5 | Yapısal Değişiklik | Birleşme, Bölünme, Tür Değiştirme |
+| 6 | Şube | Şube Açılış/Kapanış |
+| 7 | Tasfiye | Tasfiyeye Giriş, Tasfiye Sonu |
+| 8 | İflas/Konkordato | İflas Kararı, Konkordato Mühleti |
+| 9 | Devir | İşletme Devri |
+| 10 | Çağrı/Bildirim | Genel Kurul Çağrısı, Alacaklılara Çağrı |
+| 11 | Düzeltme | Hatalı İlan Düzeltmesi |
 
 ## Setup Instructions
 
@@ -63,21 +64,19 @@ brew install postgresql
 ### 2. Install Python Dependencies
 
 ```bash
-pip install psycopg2-binary
+pip install -r requirements_database.txt
 ```
 
 ### 3. Configure Database
 
-Edit `import_to_postgres.py` and update database credentials:
+Create a `.env` file in the project root with your database credentials:
 
-```python
-DB_CONFIG = {
-    'dbname': 'gazette_db',
-    'user': 'postgres',
-    'password': 'your_password',  # ← Change this
-    'host': 'localhost',
-    'port': 5432
-}
+```env
+DB_NAME=gazette_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
 ```
 
 ### 4. Initialize Database
@@ -90,15 +89,13 @@ python import_to_postgres.py
 
 When prompted, type `y` to initialize the schema:
 ```
-Initialize schema (will drop existing tables)? [y/N]: y
+Initialize schema (will drop existing table)? [y/N]: y
 ```
 
 This will:
 1. Create database `gazette_db` if it doesn't exist
-2. Create tables (`gazettes`, `announcements`)
-3. Create indexes for performance
-4. Create views for common queries
-5. Import all JSON files from `gazette_outputs/json/`
+2. Create the `ilanlar` table and indexes
+3. Import all JSON files from the configured directory
 
 ## Usage Examples
 
@@ -107,214 +104,142 @@ This will:
 ```bash
 # Using psql command-line tool
 psql -U postgres -d gazette_db
+
+# Or use the provided batch file (Windows)
+connect_db.bat
 ```
 
 ### Basic Queries
 
 #### 1. View All Announcements
 ```sql
-SELECT * FROM v_successful_announcements
-ORDER BY gazette_number DESC
+SELECT * FROM ilanlar
+ORDER BY gazete_tarihi DESC NULLS LAST
 LIMIT 10;
 ```
 
 #### 2. Find Company by MERSİS Number
 ```sql
-SELECT * FROM get_company_announcements('0334053510100016');
+SELECT * FROM ilanlar
+WHERE mersis_no = '0334053510100016'
+ORDER BY gazete_tarihi DESC;
 ```
 
-#### 3. Get Merger Announcements
+#### 3. Get Announcements by Type
 ```sql
-SELECT
-    company_name,
-    content->'acquiring_company'->>'name' as acquiring_company,
-    content->'acquired_company'->>'name' as acquired_company,
-    content->>'registration_date' as registration_date
-FROM announcements
-WHERE announcement_type = 'birleşme'
-ORDER BY id DESC;
+-- Get all establishment announcements (kuruluş)
+SELECT unvan, mersis_no, gazete_tarihi
+FROM ilanlar
+WHERE ilan_turu = 1
+ORDER BY gazete_tarihi DESC;
+
+-- Get all mergers (yapısal değişiklik)
+SELECT unvan, mersis_no, gazete_tarihi, detaylar
+FROM ilanlar
+WHERE ilan_turu = 5
+ORDER BY gazete_tarihi DESC;
 ```
 
-#### 4. Get Address Changes
+#### 4. Get Announcements by City
 ```sql
-SELECT
-    company_name,
-    mersis_no,
-    content->>'old_address' as old_address,
-    content->>'new_address' as new_address,
-    content->>'change_date' as change_date
-FROM announcements
-WHERE announcement_type = 'adres_değişikliği'
-ORDER BY id DESC;
+-- Get all announcements from Istanbul (plaka 34)
+SELECT unvan, ilan_turu, gazete_tarihi
+FROM ilanlar
+WHERE il = 34
+ORDER BY gazete_tarihi DESC;
+
+-- Get all announcements from Ankara (plaka 6)
+SELECT unvan, ilan_turu, gazete_tarihi
+FROM ilanlar
+WHERE il = 6
+ORDER BY gazete_tarihi DESC;
 ```
 
-#### 5. Find Companies in a Specific City
+#### 5. Search by Company Name
 ```sql
-SELECT DISTINCT
-    company_name,
-    mersis_no,
-    announcement_type
-FROM announcements
-WHERE content->>'city' = 'ANKARA'
-   OR content->'acquiring_company'->>'city' = 'ANKARA'
-   OR content->'acquired_company'->>'city' = 'ANKARA';
+SELECT unvan, mersis_no, ilan_turu, gazete_tarihi
+FROM ilanlar
+WHERE unvan ILIKE '%BAYKAR%'
+ORDER BY gazete_tarihi DESC;
 ```
 
-#### 6. Get Compound Changes
+#### 6. Get Statistics by Type
 ```sql
-SELECT
-    company_name,
-    content->>'registered_matters' as registered_matters,
-    content->>'old_address' as old_address,
-    content->>'new_address' as new_address,
-    content->>'old_capital' as old_capital,
-    content->>'new_capital' as new_capital
-FROM announcements
-WHERE announcement_type = 'bileşik_değişiklik'
-ORDER BY id DESC;
+SELECT ilan_turu, COUNT(*) as count
+FROM ilanlar
+GROUP BY ilan_turu
+ORDER BY count DESC;
 ```
 
-#### 7. Search by Company Name
+#### 7. Get Statistics by City
 ```sql
-SELECT
-    a.company_name,
-    a.announcement_type,
-    g.gazette_number,
-    g.gazette_date,
-    a.content
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-WHERE a.company_name ILIKE '%BAYKAR%'
-ORDER BY g.gazette_number DESC;
-```
-
-#### 8. View Fallback Extractions (Unknown Types)
-```sql
-SELECT * FROM v_fallback_extractions;
-```
-
-#### 9. Get Statistics by Announcement Type
-```sql
-SELECT * FROM v_announcement_type_stats;
-```
-
-#### 10. Company Activity Over Time
-```sql
-SELECT * FROM v_company_activity
-WHERE announcement_count > 1
-ORDER BY announcement_count DESC;
+SELECT il, COUNT(*) as count
+FROM ilanlar
+GROUP BY il
+ORDER BY count DESC
+LIMIT 20;
 ```
 
 ### Advanced JSONB Queries
 
-#### 1. Search for Specific Capital Amount
+#### 1. Search in detaylar JSONB
 ```sql
-SELECT company_name, content
-FROM announcements
-WHERE announcement_type = 'bileşik_değişiklik'
-  AND content->'new_capital'->>'amount' IS NOT NULL
-  AND (content->'new_capital'->>'amount')::NUMERIC > 1000000;
+-- Find announcements with specific field in detaylar
+SELECT unvan, detaylar
+FROM ilanlar
+WHERE detaylar ? 'deadline_for_creditors';
+
+-- Pretty print JSONB content
+SELECT unvan, jsonb_pretty(detaylar)
+FROM ilanlar
+WHERE id = 1;
 ```
 
-#### 2. Find All Shareholders
+#### 2. List All Keys in detaylar
 ```sql
-SELECT
-    company_name,
-    jsonb_array_elements(content->'shareholders')->>'name' as shareholder_name
-FROM announcements
-WHERE content ? 'shareholders'
-ORDER BY company_name;
-```
-
-#### 3. Search by Notary Info
-```sql
-SELECT company_name, content
-FROM announcements
-WHERE content->'notary_info'->>'notary_name' ILIKE '%Beyoğlu%';
-```
-
-#### 4. Get All Announcements with Specific Field
-```sql
--- Find all announcements that have a 'deadline_for_creditors' field
-SELECT company_name, content->>'deadline_for_creditors' as deadline
-FROM announcements
-WHERE content ? 'deadline_for_creditors';
+SELECT DISTINCT jsonb_object_keys(detaylar) as keys
+FROM ilanlar
+ORDER BY keys;
 ```
 
 ### Export Data
 
 #### 1. Export to CSV
 ```sql
-\copy (SELECT company_name, mersis_no, announcement_type FROM announcements) TO 'announcements.csv' WITH CSV HEADER;
+\copy (SELECT unvan, mersis_no, ilan_turu, il, gazete_tarihi FROM ilanlar) TO 'ilanlar.csv' WITH CSV HEADER;
 ```
 
 #### 2. Export Specific Type to JSON
 ```sql
-\copy (SELECT row_to_json(t) FROM (SELECT * FROM announcements WHERE announcement_type = 'birleşme') t) TO 'mergers.json';
+\copy (SELECT row_to_json(t) FROM (SELECT * FROM ilanlar WHERE ilan_turu = 5) t) TO 'yapisal_degisiklik.json';
 ```
 
-## Views Reference
+## Python Query Interface
 
-### 1. `v_successful_announcements`
-All successfully extracted announcements with gazette info.
+Use the provided `query_db.py` for easy querying:
 
-```sql
-SELECT * FROM v_successful_announcements;
+```bash
+# Interactive menu
+python query_db.py
+
+# Command line options
+python query_db.py --all --limit 20
+python query_db.py --type 1                # Filter by type
+python query_db.py --city 34              # Filter by city
+python query_db.py --company "BAYKAR"     # Search company
+python query_db.py --mersis "0334053510100016"
+python query_db.py --stats                # Statistics by type
+python query_db.py --stats-city           # Statistics by city
+python query_db.py --recent 30            # Last 30 days
 ```
-
-### 2. `v_fallback_extractions`
-Announcements extracted using generic fallback (unknown types).
-
-```sql
-SELECT * FROM v_fallback_extractions;
-```
-
-### 3. `v_announcement_type_stats`
-Statistics grouped by announcement type.
-
-```sql
-SELECT * FROM v_announcement_type_stats;
-```
-
-### 4. `v_company_activity`
-Company activity summary across all gazettes.
-
-```sql
-SELECT * FROM v_company_activity
-WHERE company_name ILIKE '%ENERGY%';
-```
-
-## Functions Reference
-
-### 1. `get_company_announcements(mersis_no)`
-Get all announcements for a specific company.
-
-```sql
-SELECT * FROM get_company_announcements('0334053510100016');
-```
-
-### 2. `search_announcements_by_content(key, value)`
-Search announcements by JSONB content field.
-
-```sql
-SELECT * FROM search_announcements_by_content('city', 'ANKARA');
-```
-
-## Performance Tips
-
-1. **Use Indexes**: All common query fields are indexed
-2. **JSONB Queries**: Use `->>` for text, `->` for JSON objects
-3. **GIN Index**: The `content` JSONB column has a GIN index for fast searches
-4. **Views**: Use pre-defined views for common queries
 
 ## Data Analysis Examples
 
 ### 1. Most Active Companies
 ```sql
-SELECT company_name, COUNT(*) as announcement_count
-FROM announcements
-WHERE company_name IS NOT NULL
-GROUP BY company_name
+SELECT unvan, COUNT(*) as announcement_count
+FROM ilanlar
+GROUP BY unvan
 HAVING COUNT(*) > 1
 ORDER BY announcement_count DESC
 LIMIT 20;
@@ -323,51 +248,36 @@ LIMIT 20;
 ### 2. Announcements by Month
 ```sql
 SELECT
-    DATE_TRUNC('month', created_at) as month,
+    DATE_TRUNC('month', gazete_tarihi) as month,
     COUNT(*) as announcement_count
-FROM announcements
+FROM ilanlar
+WHERE gazete_tarihi IS NOT NULL
 GROUP BY month
 ORDER BY month DESC;
 ```
 
-### 3. Registry Office Activity
+### 3. Type Distribution by City
 ```sql
 SELECT
-    registry_office,
-    COUNT(*) as total_announcements,
-    COUNT(DISTINCT company_name) as unique_companies
-FROM announcements
-GROUP BY registry_office
-ORDER BY total_announcements DESC;
-```
-
-### 4. Extraction Quality Report
-```sql
-SELECT
-    g.source_file,
-    COUNT(*) as total,
-    SUM(CASE WHEN a.extraction_success AND NOT a.is_fallback THEN 1 ELSE 0 END) as successful,
-    SUM(CASE WHEN a.is_fallback THEN 1 ELSE 0 END) as fallback,
-    SUM(CASE WHEN NOT a.extraction_success THEN 1 ELSE 0 END) as failed
-FROM announcements a
-JOIN gazettes g ON a.gazette_id = g.id
-GROUP BY g.source_file
-ORDER BY g.source_file;
+    il,
+    ilan_turu,
+    COUNT(*) as count
+FROM ilanlar
+GROUP BY il, ilan_turu
+ORDER BY il, count DESC;
 ```
 
 ## Maintenance
 
 ### Re-import Updated Data
 
-To re-import after fixing extraction issues:
-
 ```bash
-# 1. Drop and recreate schema
+# Drop and recreate schema
 python import_to_postgres.py
 # → Answer 'y' when prompted
 
-# 2. Or manually clear data
-psql -U postgres -d gazette_db -c "TRUNCATE announcements, gazettes CASCADE;"
+# Or manually clear data
+psql -U postgres -d gazette_db -c "TRUNCATE ilanlar CASCADE;"
 ```
 
 ### Backup Database
@@ -383,8 +293,9 @@ psql -U postgres gazette_db < gazette_db_backup.sql
 ### Check Database Size
 
 ```sql
-SELECT
-    pg_size_pretty(pg_database_size('gazette_db')) as database_size;
+SELECT pg_size_pretty(pg_database_size('gazette_db')) as database_size;
+
+SELECT COUNT(*) as total_ilanlar FROM ilanlar;
 ```
 
 ## Troubleshooting
@@ -403,57 +314,54 @@ brew services start postgresql     # macOS
 
 ### Permission Issues
 
-```bash
-# Grant user permissions
-psql -U postgres
+```sql
+-- Grant user permissions
 CREATE USER your_user WITH PASSWORD 'your_password';
 GRANT ALL PRIVILEGES ON DATABASE gazette_db TO your_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO your_user;
 ```
 
 ### JSONB Query Issues
 
 ```sql
 -- Check JSONB structure
-SELECT jsonb_pretty(content) FROM announcements LIMIT 1;
+SELECT jsonb_pretty(detaylar) FROM ilanlar LIMIT 1;
 
--- List all keys in content
-SELECT DISTINCT jsonb_object_keys(content) FROM announcements;
+-- List all keys in detaylar
+SELECT DISTINCT jsonb_object_keys(detaylar) FROM ilanlar;
 ```
-
-## Next Steps
-
-After importing data, you can:
-
-1. **Build dashboards** - Connect Power BI, Tableau, or Grafana
-2. **Create APIs** - Build REST APIs using Flask/FastAPI
-3. **Data analysis** - Use Python with pandas + SQLAlchemy
-4. **Reports** - Generate automated reports with SQL queries
-5. **Monitoring** - Track new announcements and changes over time
 
 ## Example Python Integration
 
 ```python
 import psycopg2
 import pandas as pd
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Connect
 conn = psycopg2.connect(
-    dbname='gazette_db',
-    user='postgres',
-    password='your_password',
-    host='localhost'
+    dbname=os.getenv('DB_NAME', 'gazette_db'),
+    user=os.getenv('DB_USER', 'postgres'),
+    password=os.getenv('DB_PASSWORD'),
+    host=os.getenv('DB_HOST', 'localhost')
 )
 
 # Query to DataFrame
 df = pd.read_sql_query("""
     SELECT
-        a.company_name,
-        a.announcement_type,
-        g.gazette_date,
-        a.content
-    FROM announcements a
-    JOIN gazettes g ON a.gazette_id = g.id
-    WHERE a.announcement_type = 'birleşme'
+        unvan,
+        ilan_turu,
+        mersis_no,
+        il,
+        gazete_tarihi,
+        detaylar
+    FROM ilanlar
+    WHERE ilan_turu = 5  -- Yapısal değişiklik (birleşme, bölünme)
+    ORDER BY gazete_tarihi DESC
+    LIMIT 100
 """, conn)
 
 print(df)
