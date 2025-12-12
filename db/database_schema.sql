@@ -1,14 +1,6 @@
--- ============================================================================
--- Turkish Trade Registry Gazette Database Schema
--- ============================================================================
-
--- Drop existing tables (cascade to handle dependencies)
 DROP TABLE IF EXISTS announcements CASCADE;
 DROP TABLE IF EXISTS gazettes CASCADE;
 
--- ============================================================================
--- GAZETTE TABLE
--- ============================================================================
 CREATE TABLE gazettes (
     id SERIAL PRIMARY KEY,
     gazette_number INTEGER NOT NULL,
@@ -24,9 +16,6 @@ CREATE TABLE gazettes (
 CREATE INDEX idx_gazette_number ON gazettes(gazette_number);
 CREATE INDEX idx_gazette_date ON gazettes(gazette_date);
 
--- ============================================================================
--- ANNOUNCEMENTS TABLE
--- ============================================================================
 CREATE TABLE announcements (
     id SERIAL PRIMARY KEY,
     gazette_id INTEGER NOT NULL REFERENCES gazettes(id) ON DELETE CASCADE,
