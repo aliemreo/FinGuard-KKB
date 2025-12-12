@@ -7,6 +7,18 @@ import json
 import re
 from difflib import SequenceMatcher
 from typing import List, Dict, Optional
+import argparse
+from datetime import datetime
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--start-date", type=str, required=True)
+parser.add_argument("--end-date", type=str, required=True)
+parser.add_argument("--company", type=str, required=True)
+args = parser.parse_args()
+
+START_DATE = datetime.strptime(args.start_date, "%d.%m.%Y")
+END_DATE = datetime.strptime(args.end_date, "%d.%m.%Y")
+COMPANY_NAME = args.company
 
 
 class NewsFilterConfig:
@@ -390,8 +402,8 @@ class CurrentNewsSearchEngine:
         company_name: str,
         max_results: int = 100,
         language: str = "tr",
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
+        start_date: Optional[str] = START_DATE,
+        end_date: Optional[str] = END_DATE,
     ) -> List[Dict]:
         print(f"🔍 Searching CurrentNews API for: {company_name}")
 
@@ -446,9 +458,54 @@ class CurrentNewsSearchEngine:
             return []
 
 
+class DateExtractor:
+    """Extract publication dates from URLs and content"""
+
+    @staticmethod
+    def extract_date_from_url(url: str) -> Optional[str]:
+        """
+        Try to extract date from URL patterns
+        Returns date in YYYY-MM-DD format or None
+        """
+        # Common date patterns in URLs
+        patterns = [
+            r"/(\d{4})/(\d{2})/(\d{2})/",  # /2024/12/15/
+            r"/(\d{4})-(\d{2})-(\d{2})/",  # /2024-12-15/
+            r"/(\d{8})/",  # /20241215/
+            r"_(\d{4})(\d{2})(\d{2})_",  # _20241215_
+            r"-(\d{4})(\d{2})(\d{2})-",  # -20241215-
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                groups = match.groups()
+                if len(groups) == 3:
+                    year, month, day = groups
+                    # Validate date
+                    try:
+                        date_obj = datetime(int(year), int(month), int(day))
+                        return date_obj.strftime("%Y-%m-%d")
+                    except ValueError:
+                        continue
+                elif len(groups) == 1:  # Format: 20241215
+                    date_str = groups[0]
+                    try:
+                        year = date_str[:4]
+                        month = date_str[4:6]
+                        day = date_str[6:8]
+                        date_obj = datetime(int(year), int(month), int(day))
+                        return date_obj.strftime("%Y-%m-%d")
+                    except ValueError:
+                        continue
+
+        return None
+
+
 class DuckDuckGoSearchEngine:
-    def __init__(self, config: NewsFilterConfig):
+    def __init__(self, config):
         self.config = config
+        self.date_extractor = DateExtractor()
 
     def build_queries(
         self,
@@ -456,6 +513,10 @@ class DuckDuckGoSearchEngine:
         year: Optional[int] = None,
         start_date: Optional[str] = None,
     ) -> List[str]:
+
+        if isinstance(start_date, datetime):
+            start_date = start_date.strftime("%Y-%m-%d")
+
         if year is None:
             if start_date:
                 year = int(start_date.split("-")[0])
@@ -474,7 +535,7 @@ class DuckDuckGoSearchEngine:
     def search_duckduckgo(
         self, company_name: str, max_results: int = 30, start_date: Optional[str] = None
     ) -> List[Dict]:
-        print(f"🔍 Searching DuckDuckGo for: {company_name}")
+        print(f"🔍 Searching DuckDuckGo News for: {company_name}")
         results = []
 
         queries = self.build_queries(company_name, start_date=start_date)
@@ -484,21 +545,30 @@ class DuckDuckGoSearchEngine:
             with DDGS() as ddgs:
                 for query in queries:
                     try:
-                        search_results = ddgs.text(
+                        # Use news() instead of text() - includes dates!
+                        search_results = ddgs.news(
                             query, max_results=results_per_query, region="tr-tr"
                         )
 
                         for result in search_results:
-                            url = result.get("href") or result.get("link")
-                            if url:
-                                results.append(
-                                    {
-                                        "url": url,
-                                        "title": result.get("title", ""),
-                                        "snippet": result.get("body", ""),
-                                        "source": "duckduckgo",
-                                    }
+                            url = result.get("url", "")
+                            published_date = result.get("date", "")
+
+                            # If no date from API, try extracting from URL
+                            if not published_date:
+                                published_date = (
+                                    self.date_extractor.extract_date_from_url(url)
                                 )
+
+                            results.append(
+                                {
+                                    "url": url,
+                                    "title": result.get("title", ""),
+                                    "snippet": result.get("body", ""),
+                                    "source": "duckduckgo",
+                                    "published_at": published_date or "",
+                                }
+                            )
 
                         time.sleep(0.5)
 
@@ -506,12 +576,65 @@ class DuckDuckGoSearchEngine:
                         print(f"  ⚠️ Query failed: {query[:50]}... - {e}")
                         continue
 
-            print(f"  ✓ Found {len(results)} raw results from DuckDuckGo")
+            dates_found = sum(1 for r in results if r.get("published_at"))
+            print(f"  ✓ Found {len(results)} raw results from DuckDuckGo News")
+            print(f"  📅 Extracted dates from {dates_found}/{len(results)} URLs")
             return results
 
         except Exception as e:
             print(f"  ✗ DuckDuckGo search failed: {e}")
             return []
+
+
+def search_duckduckgo(
+    self, company_name: str, max_results: int = 30, start_date: Optional[str] = None
+) -> List[Dict]:
+    print(f"🔍 Searching DuckDuckGo News for: {company_name}")
+    results = []
+
+    queries = self.build_queries(company_name, start_date=start_date)
+    results_per_query = max(5, max_results // len(queries))
+
+    try:
+        with DDGS() as ddgs:
+            for query in queries:
+                try:
+                    # Use news() instead of text() - includes dates!
+                    search_results = ddgs.news(
+                        query, max_results=results_per_query, region="tr-tr"
+                    )
+
+                    for result in search_results:
+                        url = result.get("url", "")
+                        published_date = result.get("date", "")
+
+                        if not published_date:
+                            published_date = self.date_extractor.extract_date_from_url(
+                                url
+                            )
+
+                        results.append(
+                            {
+                                "url": url,
+                                "title": result.get("title", ""),
+                                "snippet": result.get("body", ""),
+                                "source": "duckduckgo",
+                                "published_at": published_date or "",
+                            }
+                        )
+
+                    time.sleep(0.5)
+
+                except Exception as e:
+                    print(f"  ⚠️ Query failed: {query[:50]}... - {e}")
+                    continue
+
+        print(f"  ✓ Found {len(results)} raw results from DuckDuckGo News")
+        return results
+
+    except Exception as e:
+        print(f"  ✗ DuckDuckGo search failed: {e}")
+        return []
 
 
 class URLExtractor:
@@ -771,11 +894,11 @@ if __name__ == "__main__":
     extractor = URLExtractor(similarity_threshold=0.75)
 
     # Extract URLs with hybrid approach
-    company_name = "turkcell"
+    company_name = COMPANY_NAME
     urls = extractor.extract_urls(
         company_name=company_name,
-        start_date="2023-01-01",
-        end_date="2025-12-31",
+        start_date=START_DATE,
+        end_date=END_DATE,
         target_count=50,
         language="tr",
         api_threshold=50,  # Use duckduckgo if API returns < 50 articles
