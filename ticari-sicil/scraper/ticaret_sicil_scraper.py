@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from dotenv import load_dotenv
@@ -14,10 +14,10 @@ import io
 import cv2
 import numpy as np
 import base64
-from twocaptcha import TwoCaptcha
 import argparse
 import sys
 import ollama
+
 
 # Safe print function for Windows console
 def safe_print(text):
@@ -30,13 +30,11 @@ def safe_print(text):
         print(text)
 
 class TicaretSicilLogin:
-    def __init__(self, email, password, twocaptcha_api_key=None, pdf_output_dir='gazette_pdfs'):
+    def __init__(self, email, password, pdf_output_dir='gazette_pdfs'):
         self.email = email
         self.password = password
         self.driver = None
         self.base_url = "https://www.ticaretsicil.gov.tr/index.php"
-        self.twocaptcha_api_key = twocaptcha_api_key
-        self.solver = TwoCaptcha(twocaptcha_api_key) if twocaptcha_api_key else None
         self.pdf_output_dir = os.path.abspath(pdf_output_dir)
 
     def setup_driver(self):
@@ -51,15 +49,25 @@ class TicaretSicilLogin:
         # Configure PDF auto-download
         # Create output directory if it doesn't exist
         os.makedirs(self.pdf_output_dir, exist_ok=True)
+        print(f"PDF download directory: {self.pdf_output_dir}")
 
         prefs = {
             "download.default_directory": self.pdf_output_dir,
             "download.prompt_for_download": False,
             "plugins.always_open_pdf_externally": True,  # Download instead of opening in browser
             "download.directory_upgrade": True,
-            "safebrowsing.enabled": True
+            "safebrowsing.enabled": True,
+            "profile.default_content_settings.popups": 0,
+            "download.extensions_to_open": "",
+            "plugins.plugins_disabled": ["Chrome PDF Viewer"]
         }
         options.add_experimental_option("prefs", prefs)
+
+        # Additional arguments to help with downloads
+        options.add_argument('--disable-popup-blocking')
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--no-sandbox')
 
         # Automatically download and use the correct ChromeDriver version
         service = Service(ChromeDriverManager().install())
@@ -133,43 +141,6 @@ class TicaretSicilLogin:
 
         return img
 
-    def solve_captcha_with_2captcha(self):
-        """
-        Solve CAPTCHA using 2Captcha service
-        Returns the CAPTCHA text or None if failed
-        """
-        try:
-            if not self.solver:
-                print("2Captcha API key not provided")
-                return None
-
-            print("Solving CAPTCHA using 2Captcha service...")
-
-            # Find the CAPTCHA image element
-            captcha_img_element = self.driver.find_element(By.ID, "CaptchaImg")
-
-            # Take a screenshot of the CAPTCHA
-            captcha_png = captcha_img_element.screenshot_as_png
-
-            # Convert to base64 for 2Captcha
-            captcha_base64 = base64.b64encode(captcha_png).decode('utf-8')
-
-            print("Sending CAPTCHA to 2Captcha... (this may take 10-30 seconds)")
-
-            # Send to 2Captcha
-            result = self.solver.normal(captcha_base64)
-
-            if result and 'code' in result:
-                captcha_text = result['code']
-                safe_print(f"✓ 2Captcha solved: {captcha_text}")
-                return captcha_text
-            else:
-                safe_print("✗ 2Captcha failed to solve")
-                return None
-
-        except Exception as e:
-            print(f"Error with 2Captcha: {str(e)}")
-            return None
 
     def solve_captcha_with_vlm(self, model='minicpm-v', confidence_threshold=0.6):
         """
@@ -369,7 +340,7 @@ CAPTCHA Text:"""
 
             # Wait for page to load
             print("Waiting for page to load...")
-            time.sleep(3)
+            time.sleep(1)
 
             # Click the login button to open the modal
             print("Opening login modal...")
@@ -397,7 +368,7 @@ CAPTCHA Text:"""
                 if login_button:
                     login_button.click()
                     print("Login modal opened successfully")
-                    time.sleep(2)
+                    time.sleep(1)
                 else:
                     print("Warning: Could not find login button, form might already be visible")
             except Exception as e:
@@ -406,7 +377,7 @@ CAPTCHA Text:"""
 
             # Wait for the modal and form to appear
             print("Waiting for login form to appear...")
-            time.sleep(2)
+            time.sleep(0.5)
 
             # Find and fill email field
             print("Filling in email...")
@@ -438,18 +409,12 @@ CAPTCHA Text:"""
                     if captcha_text:
                         safe_print(f"✓ VLM solved CAPTCHA with confidence: {vlm_confidence:.2f}")
                     else:
-                        print("VLM confidence too low, trying 2Captcha...")
+                        print("VLM confidence too low, will require manual entry...")
                 except Exception as e:
-                    print(f"VLM failed: {e}, trying 2Captcha...")
+                    print(f"VLM failed: {e}, will require manual entry...")
                     captcha_text = None
 
-                # Fall back to 2Captcha if VLM fails
-                if not captcha_text and self.twocaptcha_api_key:
-                    captcha_text = self.solve_captcha_with_2captcha()
 
-                # Fall back to OCR if both VLM and 2Captcha fail
-                if not captcha_text:
-                    captcha_text = self.solve_captcha()
 
             if captcha_text:
                 print(f"Filling in CAPTCHA with: {captcha_text}")
@@ -510,7 +475,7 @@ CAPTCHA Text:"""
             login_button.click()
 
             # Wait for login to process
-            time.sleep(3)
+            time.sleep(1)
 
             # Check if login was successful
             # You can add specific success indicators here based on the website's response
@@ -556,16 +521,16 @@ CAPTCHA Text:"""
         except ValueError:
             raise ValueError(f"Invalid date format. Expected YYYY-MM-DD, got: {iso_date}")
 
-    def fetch_trade_registry_announcement(self, sicil_mudurugu, ticaret_sicil_no,
-                                         start_date=None, end_date=None):
+    def fetch_trade_registry_announcement(self, sicil_mudurugu, ticaret_unvani):
         """
         Navigate to the announcement page and fetch results
 
         Args:
             sicil_mudurugu: Name or ID of the registry office (e.g., "İSTANBUL" or "232")
-            ticaret_sicil_no: Trade registry number
-            start_date: Start date in YYYY-MM-DD format (optional)
-            end_date: End date in YYYY-MM-DD format (optional)
+            ticaret_unvani: Trade title/company name (at least first 5 characters)
+
+        Note:
+            Date filtering should be applied on the results page using filter_results_by_date()
         """
         try:
             print(f"\n{'='*50}")
@@ -597,37 +562,35 @@ CAPTCHA Text:"""
                     print(f"Could not find option: {sicil_mudurugu}")
                     return None
 
-            time.sleep(2)
+            time.sleep(0.5)
 
-            # Find and fill the Trade Registry Number field
-            print(f"Entering trade registry number: {ticaret_sicil_no}")
+            # Find and fill the Trade Title (Ticaret Unvanı) field
+            print(f"Entering trade title: {ticaret_unvani}")
 
-            # Try multiple selectors to find the trade registry number field
-            sicil_no_field = None
+            # Try multiple selectors to find the trade title field
+            unvan_field = None
             possible_selectors = [
-                (By.NAME, "TicSicNo"),  # The actual field name!
-                (By.ID, "TicSicNo"),
-                (By.NAME, "TicaretSicilNo"),
-                (By.NAME, "SicilNo"),
-                (By.ID, "TicaretSicilNo"),
-                (By.ID, "SicilNo"),
-                (By.CSS_SELECTOR, "input[placeholder*='Ticaret Sicili No']"),
-                (By.CSS_SELECTOR, "input[type='text'][name*='Sicil']"),
+                (By.NAME, "TicaretUnvani"),  # The actual field name!
+                (By.ID, "TicaretUnvani"),
+                (By.NAME, "Unvan"),
+                (By.ID, "Unvan"),
+                (By.CSS_SELECTOR, "input[placeholder*='Ticaret Unvan']"),
+                (By.CSS_SELECTOR, "input[type='text'][name*='Unvan']"),
             ]
 
             for selector_type, selector_value in possible_selectors:
                 try:
-                    sicil_no_field = WebDriverWait(self.driver, 5).until(
+                    unvan_field = WebDriverWait(self.driver, 5).until(
                         EC.element_to_be_clickable((selector_type, selector_value))
                     )
-                    print(f"Found registry number field using {selector_type}: {selector_value}")
+                    print(f"Found trade title field using {selector_type}: {selector_value}")
                     break
                 except:
                     continue
 
-            if not sicil_no_field:
+            if not unvan_field:
                 # Try to find all input fields and print them for debugging
-                print("Could not find trade registry number field. Available input fields:")
+                print("Could not find trade title field. Available input fields:")
                 all_inputs = self.driver.find_elements(By.TAG_NAME, "input")
                 for inp in all_inputs:
                     inp_type = inp.get_attribute('type')
@@ -638,125 +601,31 @@ CAPTCHA Text:"""
                 return None
 
             # Scroll to the element to ensure it's visible
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", sicil_no_field)
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", unvan_field)
             time.sleep(0.5)
 
             # Try to interact with the field
             try:
-                sicil_no_field.clear()
-                sicil_no_field.send_keys(ticaret_sicil_no)
+                unvan_field.clear()
+                unvan_field.send_keys(ticaret_unvani)
             except:
                 # If regular interaction fails, use JavaScript
                 print("Using JavaScript to fill the field...")
                 self.driver.execute_script(
                     "arguments[0].value = arguments[1];",
-                    sicil_no_field,
-                    ticaret_sicil_no
+                    unvan_field,
+                    ticaret_unvani
                 )
                 # Trigger change event
                 self.driver.execute_script(
                     "arguments[0].dispatchEvent(new Event('change', { bubbles: true }));",
-                    sicil_no_field
+                    unvan_field
                 )
 
-            time.sleep(1)
-            safe_print(f"✓ Successfully entered: {ticaret_sicil_no}")
+            time.sleep(0.5)
+            safe_print(f"✓ Successfully entered: {ticaret_unvani}")
 
-            # Handle date range if provided
-            if start_date and end_date:
-                try:
-                    print(f"Setting date range: {start_date} to {end_date}")
-
-                    # 1. Find and click the date checkbox
-                    date_checkbox = WebDriverWait(self.driver, 5).until(
-                        EC.element_to_be_clickable((By.ID, "Tarih"))
-                    )
-
-                    if not date_checkbox.is_selected():
-                        # Scroll to checkbox
-                        self.driver.execute_script("arguments[0].scrollIntoView(true);", date_checkbox)
-                        time.sleep(0.3)
-                        date_checkbox.click()
-                        print("✓ Date range checkbox activated")
-                        time.sleep(1)  # Wait for date fields to appear
-
-                    # 2. Convert dates to Turkish format (DD.MM.YYYY)
-                    start_turkish = self.convert_date_format(start_date)
-                    end_turkish = self.convert_date_format(end_date)
-                    print(f"Converted dates: {start_turkish} - {end_turkish}")
-
-                    # 3. Find and fill date fields
-                    # Try multiple possible field names
-                    start_date_selectors = [
-                        (By.NAME, "BaslangicTarihi"),
-                        (By.NAME, "IlkTarih"),
-                        (By.NAME, "TarihBas"),
-                        (By.ID, "BaslangicTarihi"),
-                        (By.ID, "IlkTarih"),
-                        (By.CSS_SELECTOR, "input[name*='Baslangic']"),
-                        (By.CSS_SELECTOR, "input[id*='Baslangic']"),
-                    ]
-
-                    end_date_selectors = [
-                        (By.NAME, "BitisTarihi"),
-                        (By.NAME, "SonTarih"),
-                        (By.NAME, "TarihBit"),
-                        (By.ID, "BitisTarihi"),
-                        (By.ID, "SonTarih"),
-                        (By.CSS_SELECTOR, "input[name*='Bitis']"),
-                        (By.CSS_SELECTOR, "input[id*='Bitis']"),
-                    ]
-
-                    # Find start date field
-                    start_date_field = None
-                    for selector_type, selector_value in start_date_selectors:
-                        try:
-                            start_date_field = WebDriverWait(self.driver, 3).until(
-                                EC.presence_of_element_located((selector_type, selector_value))
-                            )
-                            print(f"Found start date field using {selector_type}: {selector_value}")
-                            break
-                        except:
-                            continue
-
-                    # Find end date field
-                    end_date_field = None
-                    for selector_type, selector_value in end_date_selectors:
-                        try:
-                            end_date_field = WebDriverWait(self.driver, 3).until(
-                                EC.presence_of_element_located((selector_type, selector_value))
-                            )
-                            print(f"Found end date field using {selector_type}: {selector_value}")
-                            break
-                        except:
-                            continue
-
-                    if start_date_field and end_date_field:
-                        # Fill start date
-                        self.driver.execute_script("arguments[0].scrollIntoView(true);", start_date_field)
-                        time.sleep(0.3)
-                        start_date_field.clear()
-                        start_date_field.send_keys(start_turkish)
-
-                        # Fill end date
-                        self.driver.execute_script("arguments[0].scrollIntoView(true);", end_date_field)
-                        time.sleep(0.3)
-                        end_date_field.clear()
-                        end_date_field.send_keys(end_turkish)
-
-                        safe_print(f"✓ Date range set: {start_turkish} - {end_turkish}")
-                        time.sleep(0.5)
-                    else:
-                        print("Warning: Could not find date fields")
-                        if not start_date_field:
-                            print("  - Start date field not found")
-                        if not end_date_field:
-                            print("  - End date field not found")
-                        print("Proceeding without date filter...")
-
-                except Exception as e:
-                    print(f"Warning: Could not set date range: {e}")
-                    print("Proceeding without date filter...")
+            # Note: Date filtering will be applied on the results page, not here
 
             # Submit the form
             print("Submitting form...")
@@ -856,6 +725,309 @@ CAPTCHA Text:"""
             traceback.print_exc()
             return None
 
+    def filter_results_by_date(self, start_date, end_date):
+        """
+        Apply date filter on the results page after search
+
+        Args:
+            start_date: Start date in YYYY-MM-DD format
+            end_date: End date in YYYY-MM-DD format
+
+        Returns:
+            True if filter was applied successfully, False otherwise
+        """
+        try:
+            print(f"\n{'='*50}")
+            print("FILTERING RESULTS BY DATE")
+            print(f"{'='*50}")
+            print(f"Date range: {start_date} to {end_date}")
+
+            # 1. Find and click the date checkbox on results page
+            date_checkbox = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.ID, "Tarih"))
+            )
+
+            if not date_checkbox.is_selected():
+                # Scroll to checkbox with offset to avoid header overlap
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", date_checkbox)
+                time.sleep(0.5)
+
+                # Use JavaScript click to avoid "element click intercepted" error
+                self.driver.execute_script("arguments[0].click();", date_checkbox)
+                print("✓ Date filter checkbox activated")
+                time.sleep(1)  # Wait for date fields to appear
+
+            # 2. Convert dates to Turkish format (DD.MM.YYYY)
+            start_turkish = self.convert_date_format(start_date)
+            end_turkish = self.convert_date_format(end_date)
+            print(f"Converted dates: {start_turkish} - {end_turkish}")
+
+            # 3. Find and fill start date field (Tarih1)
+            start_date_field = WebDriverWait(self.driver, 5).until(
+                EC.element_to_be_clickable((By.ID, "Tarih1"))
+            )
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", start_date_field)
+            time.sleep(0.3)
+            start_date_field.clear()
+            start_date_field.send_keys(start_turkish)
+            print(f"✓ Start date entered: {start_turkish}")
+
+            # 4. Find and fill end date field (Tarih2)
+            end_date_field = WebDriverWait(self.driver, 5).until(
+                EC.element_to_be_clickable((By.ID, "Tarih2"))
+            )
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", end_date_field)
+            time.sleep(0.3)
+            end_date_field.clear()
+            end_date_field.send_keys(end_turkish)
+            print(f"✓ End date entered: {end_turkish}")
+
+            # Wait for any dynamic UI updates after filling dates
+            time.sleep(1)
+
+            # 5. Find and click the search button to apply the filter
+            print("Clicking search button to apply date filter...")
+            time.sleep(0.5)
+
+            # Try multiple selectors for the submit button (ordered by specificity)
+            submit_button = None
+            found_selector = None
+            button_selectors = [
+                # Most specific - exact match with data attribute
+                (By.CSS_SELECTOR, "button[type='submit'][data-message='İlan Ara']"),
+                # Specific class combinations
+                (By.CSS_SELECTOR, "button.btn.c-theme-btn.c-btn-square[type='submit']"),
+                (By.CSS_SELECTOR, "button.btn.c-theme-btn[type='submit']"),
+                # Generic fallbacks
+                (By.CSS_SELECTOR, "button.c-theme-btn[type='submit']"),
+                (By.CSS_SELECTOR, "button[type='submit']"),
+                (By.XPATH, "//button[@type='submit']"),
+            ]
+
+            for selector_type, selector_value in button_selectors:
+                try:
+                    submit_button = WebDriverWait(self.driver, 3).until(
+                        EC.element_to_be_clickable((selector_type, selector_value))
+                    )
+                    found_selector = (selector_type, selector_value)
+                    print(f"Found submit button using {selector_type}")
+                    break
+                except:
+                    continue
+
+            if submit_button and found_selector:
+                # Get button details for debugging
+                button_text = submit_button.text
+                button_tag = submit_button.tag_name
+                button_classes = submit_button.get_attribute('class')
+                print(f"Submit button details: tag={button_tag}, text='{button_text}', classes='{button_classes}'")
+
+                # Scroll to button
+                self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_button)
+                time.sleep(0.5)
+
+                # Re-fetch button to avoid stale element reference
+                try:
+                    selector_type, selector_value = found_selector
+                    submit_button = WebDriverWait(self.driver, 3).until(
+                        EC.element_to_be_clickable((selector_type, selector_value))
+                    )
+                    print("✓ Button re-fetched and ready to click")
+                except Exception as e:
+                    print(f"Warning: Could not re-fetch button: {e}")
+
+                # Make sure button is visible and enabled
+                print(f"Button visible: {submit_button.is_displayed()}, enabled: {submit_button.is_enabled()}")
+
+                # Try multiple click methods with stale element handling
+                clicked = False
+
+                # Method 1: JavaScript click (most reliable)
+                try:
+                    print("Attempting JavaScript click...")
+                    self.driver.execute_script("arguments[0].click();", submit_button)
+                    clicked = True
+                    print("✓ JavaScript click successful")
+                except StaleElementReferenceException:
+                    print("Element became stale during click, re-fetching...")
+                    try:
+                        selector_type, selector_value = found_selector
+                        submit_button = WebDriverWait(self.driver, 3).until(
+                            EC.element_to_be_clickable((selector_type, selector_value))
+                        )
+                        self.driver.execute_script("arguments[0].click();", submit_button)
+                        clicked = True
+                        print("✓ JavaScript click successful after re-fetch")
+                    except Exception as retry_error:
+                        print(f"JavaScript click retry failed: {retry_error}")
+                except Exception as e:
+                    print(f"JavaScript click failed: {e}")
+
+                # Method 2: Regular Selenium click (if JS failed)
+                if not clicked:
+                    try:
+                        print("Attempting regular Selenium click...")
+                        submit_button.click()
+                        clicked = True
+                        print("✓ Regular click successful")
+                    except StaleElementReferenceException:
+                        print("Element became stale, re-fetching...")
+                        try:
+                            selector_type, selector_value = found_selector
+                            submit_button = WebDriverWait(self.driver, 3).until(
+                                EC.element_to_be_clickable((selector_type, selector_value))
+                            )
+                            submit_button.click()
+                            clicked = True
+                            print("✓ Regular click successful after re-fetch")
+                        except Exception as retry_error:
+                            print(f"Regular click retry failed: {retry_error}")
+                    except Exception as e:
+                        print(f"Regular click failed: {e}")
+
+                # Method 3: Action chains (if both failed)
+                if not clicked:
+                    try:
+                        print("Attempting ActionChains click...")
+                        from selenium.webdriver.common.action_chains import ActionChains
+                        actions = ActionChains(self.driver)
+                        actions.move_to_element(submit_button).click().perform()
+                        clicked = True
+                        print("✓ ActionChains click successful")
+                    except StaleElementReferenceException:
+                        print("Element became stale, re-fetching...")
+                        try:
+                            selector_type, selector_value = found_selector
+                            submit_button = WebDriverWait(self.driver, 3).until(
+                                EC.element_to_be_clickable((selector_type, selector_value))
+                            )
+                            actions = ActionChains(self.driver)
+                            actions.move_to_element(submit_button).click().perform()
+                            clicked = True
+                            print("✓ ActionChains click successful after re-fetch")
+                        except Exception as retry_error:
+                            print(f"ActionChains click retry failed: {retry_error}")
+                    except Exception as e:
+                        print(f"ActionChains click failed: {e}")
+
+                # Method 4: Coordinate-based click (last resort)
+                if not clicked:
+                    try:
+                        print("Attempting coordinate-based click...")
+                        # Get button location and size
+                        location = submit_button.location
+                        size = submit_button.size
+
+                        # Calculate center coordinates
+                        x = location['x'] + size['width'] / 2
+                        y = location['y'] + size['height'] / 2
+
+                        print(f"Button center coordinates: x={x:.0f}, y={y:.0f}")
+
+                        # Use ActionChains to move to coordinates and click
+                        from selenium.webdriver.common.action_chains import ActionChains
+                        actions = ActionChains(self.driver)
+
+                        # Move to the button's center coordinates and click
+                        actions.move_to_element_with_offset(submit_button, 0, 0).click().perform()
+                        clicked = True
+                        print("✓ Coordinate-based click successful")
+                    except StaleElementReferenceException:
+                        print("Element became stale, re-fetching...")
+                        try:
+                            selector_type, selector_value = found_selector
+                            submit_button = WebDriverWait(self.driver, 3).until(
+                                EC.element_to_be_clickable((selector_type, selector_value))
+                            )
+                            location = submit_button.location
+                            size = submit_button.size
+                            x = location['x'] + size['width'] / 2
+                            y = location['y'] + size['height'] / 2
+                            print(f"Button center coordinates: x={x:.0f}, y={y:.0f}")
+                            actions = ActionChains(self.driver)
+                            actions.move_to_element_with_offset(submit_button, 0, 0).click().perform()
+                            clicked = True
+                            print("✓ Coordinate-based click successful after re-fetch")
+                        except Exception as retry_error:
+                            print(f"Coordinate-based click retry failed: {retry_error}")
+                    except Exception as e:
+                        print(f"Coordinate-based click failed: {e}")
+
+                if clicked:
+                    print("✓ Search button clicked successfully")
+                    # Wait for filtered results to load
+                    time.sleep(3)
+                else:
+                    print("✗ All click methods failed")
+            else:
+                print("Warning: Could not find submit button, filter might not be applied")
+
+            safe_print(f"✓ Date filter applied: {start_turkish} - {end_turkish}")
+            return True
+
+        except Exception as e:
+            print(f"Warning: Could not apply date filter: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def solve_pdf_captcha(self, timeout=5):
+        """
+        Check if CAPTCHA appears during PDF download and solve it using VLM
+
+        Args:
+            timeout: Max time to wait for CAPTCHA form (default: 5 seconds)
+
+        Returns:
+            True if CAPTCHA was solved or not present, False if failed
+        """
+        try:
+            # Check if CAPTCHA form is present
+            try:
+                WebDriverWait(self.driver, timeout).until(
+                    EC.presence_of_element_located((By.ID, "FormGuvenlikKodu"))
+                )
+                print("CAPTCHA detected during PDF download, solving...")
+            except TimeoutException:
+                # No CAPTCHA, proceed normally
+                return True
+
+            # Try to solve CAPTCHA with VLM
+            captcha_text, confidence = self.solve_captcha_with_vlm()
+
+            if not captcha_text or confidence < 0.6:
+                print(f"VLM CAPTCHA solving failed (confidence: {confidence:.2f})")
+                return False
+
+            safe_print(f"✓ VLM solved PDF CAPTCHA: '{captcha_text}' (confidence: {confidence:.2f})")
+
+            # Find and fill the CAPTCHA field (note: different ID than login)
+            captcha_field = WebDriverWait(self.driver, 5).until(
+                EC.element_to_be_clickable((By.ID, "CaptchaIlan"))
+            )
+
+            captcha_field.clear()
+            captcha_field.send_keys(captcha_text)
+            time.sleep(0.5)
+
+            # Submit the form
+            submit_button = self.driver.find_element(By.CSS_SELECTOR, "#FormGuvenlikKodu button[type='submit']")
+            submit_button.click()
+
+            # Wait for form to be submitted and page to load
+            time.sleep(2)
+
+            safe_print("✓ PDF CAPTCHA submitted successfully")
+            return True
+
+        except Exception as e:
+            print(f"Error solving PDF CAPTCHA: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    
+
     def download_pdf_from_results(self, max_pdfs=None):
         """
         Download PDFs from search results by navigating to them in browser
@@ -878,43 +1050,119 @@ CAPTCHA Text:"""
             # Save current window handle
             original_window = self.driver.current_window_handle
 
-            # Find ALL PDF links in results table
-            print("Looking for PDF links in results...")
+            # Find ALL PDF links/embeds in results
+            print("Looking for PDFs in results...")
+            print(f"Current URL: {self.driver.current_url}")
+
+            # Save page source for debugging
             try:
-                # Try multiple selectors to find PDF links
-                pdf_links = []
-                pdf_selectors = [
+                debug_html_path = os.path.join(self.pdf_output_dir, "debug_page_source.html")
+                with open(debug_html_path, 'w', encoding='utf-8') as f:
+                    f.write(self.driver.page_source)
+                print(f"✓ Saved page source to: {debug_html_path}")
+            except Exception as e:
+                print(f"Could not save page source: {e}")
+
+            try:
+                pdf_urls = []
+
+                # Method 1: Look for embed tags with PDF sources
+                print("Checking for <embed> tags...")
+                embed_elements = self.driver.find_elements(By.CSS_SELECTOR, "embed[type='application/pdf']")
+                print(f"  Found {len(embed_elements)} embed[type='application/pdf'] elements")
+
+                if not embed_elements:
+                    embed_elements = self.driver.find_elements(By.CSS_SELECTOR, "embed[src*='.pdf']")
+                    print(f"  Found {len(embed_elements)} embed[src*='.pdf'] elements")
+
+                # Also try finding any embed tags
+                all_embeds = self.driver.find_elements(By.TAG_NAME, "embed")
+                print(f"  Found {len(all_embeds)} total <embed> elements")
+
+                for embed in embed_elements:
+                    try:
+                        src = embed.get_attribute('src')
+                        if src:
+                            # Convert relative URL to absolute URL
+                            if src.startswith('/'):
+                                src = f"https://www.ticaretsicil.gov.tr{src}"
+                            pdf_urls.append(src)
+                            print(f"  ✓ Found embed PDF: ...{src[-60:]}")
+                    except Exception as e:
+                        print(f"  Error getting embed src: {e}")
+                        continue
+
+                # Method 2: Look for iframe tags with PDF sources
+                print("Checking for <iframe> tags...")
+                iframe_elements = self.driver.find_elements(By.CSS_SELECTOR, "iframe[src*='.pdf']")
+                print(f"  Found {len(iframe_elements)} iframe[src*='.pdf'] elements")
+                for iframe in iframe_elements:
+                    try:
+                        src = iframe.get_attribute('src')
+                        if src:
+                            if src.startswith('/'):
+                                src = f"https://www.ticaretsicil.gov.tr{src}"
+                            pdf_urls.append(src)
+                            print(f"  ✓ Found iframe PDF: ...{src[-60:]}")
+                    except Exception as e:
+                        print(f"  Error getting iframe src: {e}")
+                        continue
+
+                # Method 3: Look for traditional PDF links (fallback)
+                print("Checking for PDF links...")
+                pdf_link_selectors = [
                     (By.CSS_SELECTOR, "a[href*='pdf_goster.php']"),
-                    (By.XPATH, "//a[contains(@href, 'pdf_goster.php')]"),
+                    (By.CSS_SELECTOR, "a[href*='.pdf']"),
+                    (By.CSS_SELECTOR, "a[href*='tmp_gazete']"),
+                    (By.XPATH, "//a[contains(@href, '.pdf')]"),
                 ]
 
-                for selector_type, selector_value in pdf_selectors:
+                for selector_type, selector_value in pdf_link_selectors:
                     try:
                         links = self.driver.find_elements(selector_type, selector_value)
                         if links:
-                            pdf_links = links
-                            print(f"Found {len(pdf_links)} PDF link(s) using {selector_type}")
-                            break
-                    except:
+                            print(f"  Found {len(links)} links matching {selector_value}")
+                        for link in links:
+                            try:
+                                href = link.get_attribute('href')
+                                if href and href not in pdf_urls:
+                                    if href.startswith('/'):
+                                        href = f"https://www.ticaretsicil.gov.tr{href}"
+                                    pdf_urls.append(href)
+                                    print(f"  ✓ Found link PDF: ...{href[-60:]}")
+                            except Exception as e:
+                                print(f"  Error getting link href: {e}")
+                                continue
+                    except Exception as e:
+                        print(f"  Error finding links with {selector_value}: {e}")
                         continue
 
-                if not pdf_links:
-                    print("No PDF links found in search results")
+                if not pdf_urls:
+                    print("\n" + "="*50)
+                    print("⚠ NO PDFs FOUND IN SEARCH RESULTS")
+                    print("="*50)
+                    print("Possible reasons:")
+                    print("1. No results match your search criteria")
+                    print("2. PDFs are on a different page (pagination)")
+                    print("3. Results page structure has changed")
+                    print(f"4. Check the saved HTML: {debug_html_path}")
+                    print("="*50 + "\n")
+
+                    # Take a screenshot for debugging
+                    try:
+                        screenshot_path = os.path.join(self.pdf_output_dir, "debug_no_pdfs.png")
+                        self.driver.save_screenshot(screenshot_path)
+                        print(f"✓ Saved screenshot to: {screenshot_path}")
+                    except Exception as e:
+                        print(f"Could not save screenshot: {e}")
+
                     return []
 
             except Exception as e:
-                print(f"Could not find PDF links: {e}")
+                print(f"Could not find PDFs: {e}")
+                import traceback
+                traceback.print_exc()
                 return []
-
-            # Extract all PDF URLs first
-            pdf_urls = []
-            for link in pdf_links:
-                try:
-                    url = link.get_attribute('href')
-                    if url and 'pdf_goster.php' in url:
-                        pdf_urls.append(url)
-                except:
-                    continue
 
             print(f"Found {len(pdf_urls)} total PDF link(s) on page")
 
@@ -944,54 +1192,51 @@ CAPTCHA Text:"""
             for idx, pdf_url in enumerate(pdf_urls, 1):
                 try:
                     print(f"\nDownloading PDF {idx}/{len(pdf_urls)}...")
-                    print(f"URL: {pdf_url}")
 
-                    # Open PDF in new tab
+                    # Check for CAPTCHA by opening URL in new tab first
+                    print("Checking for CAPTCHA...")
                     self.driver.execute_script(f"window.open('{pdf_url}', '_blank');")
-
-                    # Switch to new tab
                     self.driver.switch_to.window(self.driver.window_handles[-1])
+                    time.sleep(2)  # Give page time to load
 
-                    # Wait for download to start (Chrome should auto-download with our settings)
-                    print("Waiting for download to complete...")
-                    time.sleep(5)  # Give Chrome time to download
+                    # Check if CAPTCHA appears
+                    captcha_solved = self.solve_pdf_captcha(timeout=3)
 
-                    # Close the tab
+                    if not captcha_solved:
+                        print(f"✗ PDF {idx}: CAPTCHA solving failed, skipping...")
+                        self.driver.close()
+                        self.driver.switch_to.window(original_window)
+                        continue
+
+                    # Get the current URL (might have changed after CAPTCHA)
+                    final_pdf_url = self.driver.current_url
+                    print(f"Final URL: ...{final_pdf_url[-60:]}")
+
+                    # Close the tab and switch back
                     self.driver.close()
-
-                    # Switch back to original window
                     self.driver.switch_to.window(original_window)
 
-                    # Check if new file appeared in download directory
-                    if os.path.exists(self.pdf_output_dir):
-                        current_files = set(os.listdir(self.pdf_output_dir))
-                        new_files = current_files - existing_files
-                        if new_files:
-                            # Find the most recently modified file
-                            newest_file = max(
-                                [os.path.join(self.pdf_output_dir, f) for f in new_files],
-                                key=os.path.getmtime
-                            )
-                            # Rename to gazette_N.pdf
-                            new_filename = f"gazette_{idx}.pdf"
-                            new_filepath = os.path.join(self.pdf_output_dir, new_filename)
+                    # Download using requests (bypasses Chrome PDF viewer)
+                    new_filename = f"gazette_{idx}.pdf"
+                    new_filepath = os.path.join(self.pdf_output_dir, new_filename)
 
-                            # If file already exists with this name, remove it
-                            if os.path.exists(new_filepath):
-                                os.remove(new_filepath)
+                    # If file already exists with this name, remove it
+                    if os.path.exists(new_filepath):
+                        os.remove(new_filepath)
 
-                            os.rename(newest_file, new_filepath)
-                            file_size = os.path.getsize(new_filepath) / 1024  # KB
-                            safe_print(f"✓ PDF {idx} downloaded: {new_filename} ({file_size:.1f} KB)")
-                            downloaded_files.append(new_filepath)
-                            existing_files = current_files  # Update for next iteration
-                        else:
-                            print(f"✗ PDF {idx}: No new file detected in download directory")
+                    # Download the PDF
+                    if self.download_pdf_with_requests(final_pdf_url, new_filepath):
+                        file_size = os.path.getsize(new_filepath) / 1024  # KB
+                        safe_print(f"✓ PDF {idx} downloaded: {new_filename} ({file_size:.1f} KB)")
+                        downloaded_files.append(new_filepath)
+                        existing_files.add(new_filename)
                     else:
-                        print(f"✗ PDF {idx}: Download directory not found")
+                        print(f"✗ PDF {idx}: Download failed")
 
                 except Exception as e:
                     print(f"✗ PDF {idx}: Error - {e}")
+                    import traceback
+                    traceback.print_exc()
                     # Make sure we're back on the original window
                     try:
                         self.driver.switch_to.window(original_window)
@@ -1062,20 +1307,20 @@ def main():
         epilog="""
 Examples:
   # Basic usage
-  python ticaret_sicil_scraper.py --office ANKARA --number 31177
+  python ticaret_sicil_scraper.py --office ANKARA --title "TURKCELL"
 
   # With date range
-  python ticaret_sicil_scraper.py --office ANKARA --number 31177 \\
+  python ticaret_sicil_scraper.py --office ANKARA --title "TURKCELL" \\
       --start-date 2024-01-01 --end-date 2024-12-31
 
   # Download PDF from results
-  python ticaret_sicil_scraper.py --office ANKARA --number 31177 --download-pdf
+  python ticaret_sicil_scraper.py --office ANKARA --title "TURKCELL" --download-pdf
 
   # Download only the 2 most recent PDFs
-  python ticaret_sicil_scraper.py --office ANKARA --number 31177 --download-pdf --max-pdfs 2
+  python ticaret_sicil_scraper.py --office ANKARA --title "TURKCELL" --download-pdf --max-pdfs 2
 
   # Full featured: date range + PDF download
-  python ticaret_sicil_scraper.py --office ANKARA --number 31177 \\
+  python ticaret_sicil_scraper.py --office ANKARA --title "TURKCELL" \\
       --start-date 2024-01-01 --end-date 2024-12-31 \\
       --download-pdf --pdf-output-dir my_gazettes
 
@@ -1091,8 +1336,8 @@ Examples:
     # Required arguments (unless in interactive mode)
     parser.add_argument('--office', type=str,
                         help='Registry office name or ID (e.g., ANKARA or 18)')
-    parser.add_argument('--number', type=str,
-                        help='Trade registry number (e.g., 31177)')
+    parser.add_argument('--title', type=str,
+                        help='Trade title/company name - at least first 5 characters (e.g., "TURKCELL")')
 
     # Optional date filtering
     parser.add_argument('--start-date', type=str,
@@ -1102,7 +1347,7 @@ Examples:
 
     # CAPTCHA options
     parser.add_argument('--no-vlm', action='store_true',
-                        help='Skip VLM CAPTCHA solving, use 2Captcha/OCR only')
+                        help='Skip VLM CAPTCHA solving, use manual entry only')
 
     # PDF download options
     parser.add_argument('--download-pdf', action='store_true',
@@ -1116,9 +1361,9 @@ Examples:
 
     # Validate arguments
     if not args.interactive:
-        # In non-interactive mode, --office and --number are required
-        if not args.office or not args.number:
-            parser.error("--office and --number are required (or use --interactive for legacy mode)")
+        # In non-interactive mode, --office and --title are required
+        if not args.office or not args.title:
+            parser.error("--office and --title are required (or use --interactive for legacy mode)")
 
     # Validate date range if provided
     if args.start_date or args.end_date:
@@ -1135,7 +1380,6 @@ Examples:
 
     EMAIL = os.getenv('EMAIL')
     PASSWORD = os.getenv('PASSWORD')
-    TWOCAPTCHA_API_KEY = os.getenv('TWOCAPTCHA_API_KEY')
 
     if not EMAIL or not PASSWORD:
         print("Error: EMAIL and PASSWORD must be set in .env file")
@@ -1144,15 +1388,9 @@ Examples:
         print("PASSWORD=your_password")
         return
 
-    if not TWOCAPTCHA_API_KEY:
-        print("\nWarning: TWOCAPTCHA_API_KEY not found in .env file")
-        print("CAPTCHA solving will fall back to OCR (less reliable)")
-        print("To use 2Captcha service:")
-        print("1. Sign up at https://2captcha.com")
-        print("2. Add TWOCAPTCHA_API_KEY=your_api_key to .env file\n")
 
     # Create login instance
-    login = TicaretSicilLogin(EMAIL, PASSWORD, TWOCAPTCHA_API_KEY, args.pdf_output_dir)
+    login = TicaretSicilLogin(EMAIL, PASSWORD, args.pdf_output_dir)
 
     try:
         # Setup the browser
@@ -1179,9 +1417,9 @@ Examples:
                     print("\nEnter Sicil Müdürlüğü (e.g., İSTANBUL or 232): ", end='')
                     sicil_mudurugu = input().strip()
 
-                    # Get trade registry number
-                    print("Enter Ticaret Sicil No: ", end='')
-                    ticaret_sicil_no = input().strip()
+                    # Get trade title
+                    print("Enter Ticaret Unvanı (at least first 5 characters): ", end='')
+                    ticaret_unvani = input().strip()
 
                     # Optional date range in interactive mode
                     use_dates = input("Filter by date range? (y/n): ").strip().lower()
@@ -1198,12 +1436,12 @@ Examples:
                 # Automatic mode with command-line arguments
                 fetch_choice = 'y'
                 sicil_mudurugu = args.office
-                ticaret_sicil_no = args.number
+                ticaret_unvani = args.title
                 start_date = args.start_date
                 end_date = args.end_date
 
                 print(f"Registry Office: {sicil_mudurugu}")
-                print(f"Registry Number: {ticaret_sicil_no}")
+                print(f"Trade Title: {ticaret_unvani}")
                 if start_date and end_date:
                     print(f"Date Range: {start_date} to {end_date}")
 
@@ -1211,12 +1449,14 @@ Examples:
                 # Fetch the announcement
                 page_source = login.fetch_trade_registry_announcement(
                     sicil_mudurugu,
-                    ticaret_sicil_no,
-                    start_date,
-                    end_date
+                    ticaret_unvani
                 )
 
                 if page_source:
+                    # Apply date filter on results page if dates were provided
+                    if start_date and end_date:
+                        login.filter_results_by_date(start_date, end_date)
+
                     # Download PDFs if requested
                     if args.download_pdf:
                         print("\nDownloading PDFs from results...")
