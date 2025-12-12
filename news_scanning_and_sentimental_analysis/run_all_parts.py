@@ -1,17 +1,22 @@
 import subprocess
+import os
 import sys
 
+os.environ["PYTHONIOENCODING"] = "utf-8"
 
-def run_file(path):
-    print(f"\n>>> Running {path} ...")
-    result = subprocess.run([sys.executable, path])
-    if result.returncode != 0:
-        print(f"!!! {path} failed with exit code {result.returncode}")
-        sys.exit(result.returncode)
+command = (
+    "python url_extractor.py && "
+    "python scraper.py && "
+    "python html_cleaner.py && "
+    "python fine_tuned_sentimental_classification.py"
+)
 
+process = subprocess.Popen(
+    command,
+    shell=True,
+    stdout=sys.stdout,  # stream directly
+    stderr=sys.stderr,  # stream directly
+    encoding="utf-8",  # force UTF-8 decoding
+)
 
-if __name__ == "__main__":
-    run_file("url_extractor.py")
-    run_file("scraper.py")
-    run_file("html_cleaner.py")
-    run_file("sentimental_classifier.py")
+process.communicate()

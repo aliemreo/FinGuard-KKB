@@ -49,14 +49,14 @@ class NewsScraper:
         self.errors = []
         self.errors_lock = threading.Lock()
 
-    def _generate_filename(self, url: str, index: int) -> str:
+    def _generate_filename(self, url: str, index: int, article_id: int) -> str:
         url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
         try:
             domain = urlparse(url).netloc.replace("www.", "")
             domain = domain.split(".")[0]
         except:
             domain = "unknown"
-        return f"article_{index:03d}_{domain}_{url_hash}"
+        return f"id_{article_id}_{domain}_{url_hash}"
 
     def _take_screenshot(self, page: Page, output_path: Path) -> bool:
         """Take screenshot (viewport or full page based on settings)"""
@@ -96,7 +96,7 @@ class NewsScraper:
             # Minimal wait for rendering
             page.wait_for_timeout(800)  # 0.8 seconds
 
-            filename = self._generate_filename(url, index)
+            filename = self._generate_filename(url, index, metadata.get("id", 0))
             screenshot_path = self.screenshots_dir / f"{filename}.png"
             html_path = self.html_dir / f"{filename}.html"
 
@@ -250,7 +250,7 @@ class NewsScraper:
         results.sort(key=lambda x: x["index"])
 
         # Save results
-        results_file = self.output_dir / "scraped_results.json"
+        results_file = self.output_dir / "logs" / "scraped_results.json"
         with open(results_file, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
 

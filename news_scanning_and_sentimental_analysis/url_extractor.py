@@ -536,6 +536,8 @@ class URLExtractor:
         self.currentnews_engine = CurrentNewsSearchEngine(self.config)
         self.ddg_engine = DuckDuckGoSearchEngine(self.config)
 
+        self.id_counter = 0
+
     def filter_and_process_results(
         self,
         raw_results: List[Dict],
@@ -596,9 +598,11 @@ class URLExtractor:
                 published_at=result.get("published_at"),
             )
 
+            self.id_counter += 1
             self.duplicate_detector.add_title(title)
             filtered_urls.append(
                 {
+                    "id": self.id_counter,
                     "url": url,
                     "title": title,
                     "snippet": result.get("snippet", ""),
@@ -640,6 +644,9 @@ class URLExtractor:
         Returns:
             List of dictionaries with url, title, snippet, priority, source, importance metrics
         """
+
+        self.id_counter = 0
+
         # Set default dates
         if end_date is None:
             end_date = datetime.now().strftime("%Y-%m-%d")
