@@ -1,0 +1,93 @@
+{
+  "gazette_metadata": {
+    "date": "27 KASIM 2025",
+    "number": 11467,
+    "page": 1
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "gazette_date": "27 KASIM 2025",
+        "gazette_number": 11467,
+        "registry_office": "İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "Unknown",
+        "company_name": "TURKCELL İLETİŞİM HİZMETLERİ ANONİM ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "bileşik_değişiklik",
+      "content": {
+        "announcements": [
+          {
+            "company_name": "NAVYGATOR DIŞ TİCARET LİMİTED ŞİRKETİ",
+            "registered_matters": [
+              "Tasfiyeye Giriş",
+              "Şirketin Unvanı"
+            ],
+            "registration_date": "26.11.2025",
+            "old_address": null,
+            "new_address": null,
+            "old_capital": null,
+            "new_capital": null,
+            "capital_breakdown": null,
+            "shareholders": null,
+            "notary_info": {
+              "notary_office": "Büyükçekmece 4. Noterliği",
+              "date": "19.11.2025",
+              "record_number": "28107"
+            }
+          },
+          {
+            "company_name": "TURKCELL İLETİŞİM HİZMETLERİ ANONİM ŞİRKETİ",
+            "registered_matters": [
+              "Yönetim Kurulu / Yetkililer"
+            ],
+            "registration_date": "26.11.2025",
+            "old_address": null,
+            "new_address": null,
+            "old_capital": null,
+            "new_capital": null,
+            "capital_breakdown": null,
+            "shareholders": null,
+            "notary_info": {
+              "notary_office": "Beyoğlu 18. Noterliği",
+              "date": "20.11.2025",
+              "record_number": "17691"
+            }
+          },
+          {
+            "company_name": "PLASTYKANU PLASTIK AMBALAJ SANAYI VE TİCARET LİMİTED ŞİRKETİ",
+            "registered_matters": [
+              "Müdürler / Yetkililer"
+            ],
+            "registration_date": "26.11.2025",
+            "old_address": null,
+            "new_address": null,
+            "old_capital": null,
+            "new_capital": null,
+            "capital_breakdown": null,
+            "shareholders": null,
+            "notary_info": {
+              "notary_office": "Beyoğlu 25. Noterliği",
+              "date": "25.11.2025",
+              "record_number": "58936"
+            }
+          }
+        ]
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 1,
+    "successful_extractions": 1,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  },
+  "filter_settings": {
+    "company_filter": "TURKCELL",
+    "filter_method": "llm_semantic",
+    "filter_applied": true
+  }
+}

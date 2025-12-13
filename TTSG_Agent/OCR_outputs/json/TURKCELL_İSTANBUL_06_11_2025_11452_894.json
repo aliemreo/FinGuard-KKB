@@ -1,7 +1,7 @@
 {
   "gazette_metadata": {
     "date": null,
-    "number": 11254,
+    "number": 11452,
     "page": 1
   },
   "announcements": [],
@@ -10,5 +10,10 @@
     "successful_extractions": 0,
     "failed_extractions": 0,
     "fallback_extractions": 0
+  },
+  "filter_settings": {
+    "company_filter": "TURKCELL",
+    "filter_method": "llm_semantic",
+    "filter_applied": true
   }
 }
