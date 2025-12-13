@@ -13,11 +13,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--start-date", type=str, required=True)
 parser.add_argument("--end-date", type=str, required=True)
 parser.add_argument("--company", type=str, required=True)
+parser.add_argument(
+    "--uselocalmodel",
+    action="store_true",
+    help="Use local fine-tuned model instead of OpenAI API (default: API)",
+)
 args = parser.parse_args()
 
 START_DATE = datetime.strptime(args.start_date, "%d.%m.%Y")
 END_DATE = datetime.strptime(args.end_date, "%d.%m.%Y")
 COMPANY_NAME = args.company
+USE_LOCAL_MODEL = args.uselocalmodel
 
 
 def merge_results():
@@ -108,6 +114,7 @@ def merge_results():
         sentiment = sentiment_lookup.get(article_id, {})
         label = sentiment.get("label", None)
         confidence = sentiment.get("confidence", None)
+        summary = sentiment.get("summary", None)
 
         # Check if all required fields exist
         if not all(
@@ -142,6 +149,7 @@ def merge_results():
                 "language": language,
                 "label": label,
                 "confidence": confidence,
+                "summary": summary,
                 "needs_attention": needs_attention,
             }
         )
@@ -223,15 +231,11 @@ except Exception as e:
 
 print(f"\n✅ Found {len(urls)} articles, continuing pipeline...\n")
 
-# Step 2-4: Run remaining scripts
-remaining_commands = (
-    "python scraper.py && "
-    "python html_cleaner.py && "
-    "python fine_tuned_sentimental_classification.py"
-)
+# Step 2-3: Run scraper and html cleaner
+step_2_3_commands = "python scraper.py && python html_cleaner.py"
 
 process = subprocess.Popen(
-    remaining_commands,
+    step_2_3_commands,
     shell=True,
     stdout=sys.stdout,
     stderr=sys.stderr,
@@ -239,8 +243,30 @@ process = subprocess.Popen(
 )
 process.communicate()
 
+if process.returncode != 0:
+    print(f"\n❌ Scraper/cleaner failed with return code {process.returncode}")
+    sys.exit(process.returncode)
+
+# Step 4: Run sentiment analysis with arguments
+print("\nStep 4/4: Running sentiment analysis...")
+sentiment_command = (
+    f"python fine_tuned_sentimental_classification.py " f'--company "{COMPANY_NAME}"'
+)
+
+if USE_LOCAL_MODEL:
+    sentiment_command += " --uselocalmodel"
+
+sentiment_process = subprocess.Popen(
+    sentiment_command,
+    shell=True,
+    stdout=sys.stdout,
+    stderr=sys.stderr,
+    encoding="utf-8",
+)
+sentiment_process.communicate()
+
 # Run merge after all scripts complete
-if process.returncode == 0:
+if sentiment_process.returncode == 0:
     result = merge_results()
     if result:
         print(f"\n{'='*60}")
@@ -252,6 +278,6 @@ if process.returncode == 0:
         print(f"✅ PIPELINE COMPLETED SUCCESSFULLY")
         print(f"{'='*60}\n")
 else:
-    print(f"\n❌ Pipeline failed with return code {process.returncode}")
+    print(f"\n❌ Pipeline failed with return code {sentiment_process.returncode}")
     print("⏭️  Skipping merge step")
-    sys.exit(process.returncode)
+    sys.exit(sentiment_process.returncode)
