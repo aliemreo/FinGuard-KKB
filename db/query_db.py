@@ -1,15 +1,24 @@
 """
 Query PostgreSQL database with proper UTF-8 encoding support
 
-This script provides a Python interface to query the gazette database
+This script provides a Python interface to query the ilanlar database
 with automatic UTF-8 encoding handling for Turkish characters.
 
 Requirements:
-    pip install psycopg2-binary pandas tabulate
+    pip install psycopg2-binary pandas tabulate python-dotenv
 """
 
 import sys
 import io
+import os
+from pathlib import Path
+
+# Load env from root directory
+root_dir = Path(__file__).parent.parent
+env_path = root_dir / '.env'
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=env_path)
+
 import psycopg2
 import pandas as pd
 from tabulate import tabulate
@@ -21,11 +30,26 @@ if sys.platform == 'win32':
 
 # Database configuration
 DB_CONFIG = {
-    'dbname': 'gazette_db',
-    'user': 'postgres',
-    'password': '383418',
-    'host': 'localhost',
-    'port': 5432
+    'dbname': os.getenv('DB_NAME', 'gazette_db'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', '1234'),
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': int(os.getenv('DB_PORT', 5432))
+}
+
+# İlan türü names mapping
+ILAN_TURU_NAMES = {
+    1: 'Kuruluş',
+    2: 'Yönetim/Temsil',
+    3: 'Sermaye/Pay',
+    4: 'Sözleşme/Merkez',
+    5: 'Yapısal Değişiklik',
+    6: 'Şube',
+    7: 'Tasfiye',
+    8: 'İflas/Konkordato',
+    9: 'Devir',
+    10: 'Çağrı/Bildirim',
+    11: 'Düzeltme'
 }
 
 def connect():
@@ -57,82 +81,77 @@ def print_df(df, max_rows=None):
 # COMMON QUERIES
 # ============================================================================
 
-def get_all_announcements(limit=10):
+def get_all_ilanlar(limit=10):
     """Get all announcements"""
     query = """
         SELECT
-            g.gazette_number,
-            g.gazette_date,
-            a.company_name,
-            a.announcement_type,
-            a.mersis_no
-        FROM announcements a
-        JOIN gazettes g ON a.gazette_id = g.id
-        ORDER BY g.gazette_number DESC
+            id,
+            unvan,
+            ilan_turu,
+            mersis_no,
+            il,
+            gazete_tarihi,
+            gazete_sayisi
+        FROM ilanlar
+        ORDER BY gazete_tarihi DESC NULLS LAST
         LIMIT %s
     """
     return run_query(query, (limit,))
 
-def get_mergers():
-    """Get all merger announcements"""
+def get_ilanlar_by_type(ilan_turu: int, limit=50):
+    """Get announcements by type code (1-11)"""
     query = """
         SELECT
-            a.company_name,
-            a.content->'acquiring_company'->>'name' as acquiring_company,
-            a.content->'acquired_company'->>'name' as acquired_company,
-            a.content->>'registration_date' as registration_date,
-            a.content->>'deadline_for_creditors' as creditor_deadline,
-            g.gazette_number
-        FROM announcements a
-        JOIN gazettes g ON a.gazette_id = g.id
-        WHERE a.announcement_type = 'birleşme'
-        ORDER BY g.gazette_number DESC
+            id,
+            unvan,
+            mersis_no,
+            il,
+            gazete_tarihi,
+            detaylar
+        FROM ilanlar
+        WHERE ilan_turu = %s
+        ORDER BY gazete_tarihi DESC NULLS LAST
+        LIMIT %s
     """
-    return run_query(query)
+    return run_query(query, (ilan_turu, limit))
 
-def get_address_changes():
-    """Get all address changes"""
-    query = """
-        SELECT
-            a.company_name,
-            a.content->>'old_address' as old_address,
-            a.content->>'new_address' as new_address,
-            a.content->>'change_date' as change_date,
-            g.gazette_number
-        FROM announcements a
-        JOIN gazettes g ON a.gazette_id = g.id
-        WHERE a.announcement_type = 'adres_değişikliği'
-        ORDER BY g.gazette_number DESC
-    """
-    return run_query(query)
+def get_kurulular():
+    """Get establishment announcements (ilan_turu = 1)"""
+    return get_ilanlar_by_type(1)
 
-def get_compound_changes():
-    """Get all compound changes"""
-    query = """
-        SELECT
-            a.company_name,
-            a.content->>'registered_matters' as registered_matters,
-            a.content->>'new_address' as new_address,
-            a.content->>'new_capital' as new_capital,
-            g.gazette_number
-        FROM announcements a
-        JOIN gazettes g ON a.gazette_id = g.id
-        WHERE a.announcement_type = 'bileşik_değişiklik'
-        ORDER BY g.gazette_number DESC
-    """
-    return run_query(query)
+def get_birlesmeler():
+    """Get merger announcements (ilan_turu = 5)"""
+    return get_ilanlar_by_type(5)
+
+def get_tasfiyeler():
+    """Get liquidation announcements (ilan_turu = 7)"""
+    return get_ilanlar_by_type(7)
 
 def get_statistics():
     """Get announcement type statistics"""
     query = """
         SELECT
-            announcement_type,
-            COUNT(*) as total_count,
-            SUM(CASE WHEN extraction_success THEN 1 ELSE 0 END) as successful,
-            SUM(CASE WHEN is_fallback THEN 1 ELSE 0 END) as fallback
-        FROM announcements
-        GROUP BY announcement_type
+            ilan_turu,
+            COUNT(*) as total_count
+        FROM ilanlar
+        GROUP BY ilan_turu
         ORDER BY total_count DESC
+    """
+    df = run_query(query)
+    # Add type names
+    df['ilan_turu_adi'] = df['ilan_turu'].map(ILAN_TURU_NAMES)
+    return df[['ilan_turu', 'ilan_turu_adi', 'total_count']]
+
+def get_statistics_by_city():
+    """Get statistics by city"""
+    query = """
+        SELECT
+            il,
+            COUNT(*) as total_count
+        FROM ilanlar
+        GROUP BY il
+        ORDER BY total_count DESC
+        LIMIT 20
     """
     return run_query(query)
 
@@ -140,15 +159,15 @@ def search_company(company_name):
     """Search for company by name (partial match)"""
     query = """
         SELECT
-            a.company_name,
-            a.mersis_no,
-            a.announcement_type,
-            g.gazette_number,
-            g.gazette_date
-        FROM announcements a
-        JOIN gazettes g ON a.gazette_id = g.id
-        WHERE a.company_name ILIKE %s
-        ORDER BY g.gazette_number DESC
+            id,
+            unvan,
+            mersis_no,
+            ilan_turu,
+            il,
+            gazete_tarihi
+        FROM ilanlar
+        WHERE unvan ILIKE %s
+        ORDER BY gazete_tarihi DESC NULLS LAST
     """
     return run_query(query, (f'%{company_name}%',))
 
@@ -156,48 +175,51 @@ def get_company_by_mersis(mersis_no):
     """Get all announcements for a company by MERSİS number"""
     query = """
         SELECT
-            g.gazette_number,
-            g.gazette_date,
-            a.announcement_type,
-            a.content
-        FROM announcements a
-        JOIN gazettes g ON a.gazette_id = g.id
-        WHERE a.mersis_no = %s
-        ORDER BY g.gazette_number DESC
+            id,
+            unvan,
+            ilan_turu,
+            gazete_tarihi,
+            gazete_sayisi,
+            detaylar
+        FROM ilanlar
+        WHERE mersis_no = %s
+        ORDER BY gazete_tarihi DESC NULLS LAST
     """
     return run_query(query, (mersis_no,))
 
-def get_fallback_extractions():
-    """Get announcements that used fallback extraction"""
+def get_ilanlar_by_city(il_code: int, limit=50):
+    """Get announcements by city code (plaka)"""
     query = """
         SELECT
-            a.id,
-            g.gazette_number,
-            a.company_name,
-            a.content->>'_original_detected_type' as original_type,
-            a.announcement_type as placeholder_type
-        FROM announcements a
-        JOIN gazettes g ON a.gazette_id = g.id
-        WHERE a.is_fallback = TRUE
-        ORDER BY g.gazette_number DESC
-    """
-    return run_query(query)
-
-def get_company_activity():
-    """Get companies with multiple announcements"""
-    query = """
-        SELECT
-            company_name,
+            id,
+            unvan,
+            ilan_turu,
             mersis_no,
-            COUNT(*) as announcement_count,
-            string_agg(DISTINCT announcement_type, ', ') as announcement_types
-        FROM announcements
-        WHERE company_name IS NOT NULL
-        GROUP BY company_name, mersis_no
-        HAVING COUNT(*) > 1
-        ORDER BY announcement_count DESC
+            ilce,
+            gazete_tarihi
+        FROM ilanlar
+        WHERE il = %s
+        ORDER BY gazete_tarihi DESC NULLS LAST
+        LIMIT %s
     """
-    return run_query(query)
+    return run_query(query, (il_code, limit))
+
+def get_recent_ilanlar(days=30, limit=100):
+    """Get recent announcements from last N days"""
+    query = """
+        SELECT
+            id,
+            unvan,
+            ilan_turu,
+            mersis_no,
+            il,
+            gazete_tarihi
+        FROM ilanlar
+        WHERE gazete_tarihi >= CURRENT_DATE - INTERVAL '%s days'
+        ORDER BY gazete_tarihi DESC
+        LIMIT %s
+    """
+    return run_query(query, (days, limit))
 
 # ============================================================================
 # INTERACTIVE MENU
@@ -207,18 +229,17 @@ def main_menu():
     """Display interactive menu"""
     while True:
         print("\n" + "="*80)
-        print("GAZETTE DATABASE QUERY TOOL")
+        print("İLANLAR DATABASE QUERY TOOL")
         print("="*80)
         print("\n1.  View all announcements")
-        print("2.  View merger announcements (birleşme)")
-        print("3.  View address changes (adres_değişikliği)")
-        print("4.  View compound changes (bileşik_değişiklik)")
-        print("5.  View statistics by type")
-        print("6.  Search company by name")
-        print("7.  Search company by MERSİS number")
-        print("8.  View fallback extractions")
-        print("9.  View companies with multiple announcements")
-        print("10. Run custom SQL query")
+        print("2.  View by type (kuruluş, birleşme, tasfiye, etc.)")
+        print("3.  View statistics by type")
+        print("4.  View statistics by city")
+        print("5.  Search company by name")
+        print("6.  Search company by MERSİS number")
+        print("7.  View by city (plaka code)")
+        print("8.  View recent announcements")
+        print("9.  Run custom SQL query")
         print("0.  Exit")
 
         choice = input("\nEnter choice: ").strip()
@@ -228,37 +249,42 @@ def main_menu():
             break
         elif choice == '1':
             limit = input("Number of rows to display (default 10): ").strip() or "10"
-            df = get_all_announcements(int(limit))
+            df = get_all_ilanlar(int(limit))
             print_df(df)
         elif choice == '2':
-            df = get_mergers()
-            print_df(df)
+            print("\nİlan Türleri:")
+            for code, name in ILAN_TURU_NAMES.items():
+                print(f"  {code:2d} = {name}")
+            type_code = input("\nEnter type code (1-11): ").strip()
+            if type_code.isdigit() and 1 <= int(type_code) <= 11:
+                df = get_ilanlar_by_type(int(type_code))
+                print_df(df)
         elif choice == '3':
-            df = get_address_changes()
-            print_df(df)
-        elif choice == '4':
-            df = get_compound_changes()
-            print_df(df)
-        elif choice == '5':
             df = get_statistics()
             print_df(df)
-        elif choice == '6':
+        elif choice == '4':
+            df = get_statistics_by_city()
+            print_df(df)
+        elif choice == '5':
             company_name = input("Enter company name (partial match): ").strip()
             if company_name:
                 df = search_company(company_name)
                 print_df(df)
-        elif choice == '7':
+        elif choice == '6':
             mersis_no = input("Enter MERSİS number (16 digits): ").strip()
             if mersis_no:
                 df = get_company_by_mersis(mersis_no)
                 print_df(df)
+        elif choice == '7':
+            il_code = input("Enter city plaka code (1-81): ").strip()
+            if il_code.isdigit() and 1 <= int(il_code) <= 81:
+                df = get_ilanlar_by_city(int(il_code))
+                print_df(df)
         elif choice == '8':
-            df = get_fallback_extractions()
+            days = input("Number of days to look back (default 30): ").strip() or "30"
+            df = get_recent_ilanlar(int(days))
             print_df(df)
         elif choice == '9':
-            df = get_company_activity()
-            print_df(df)
-        elif choice == '10':
             print("\nEnter SQL query (end with semicolon):")
             query_lines = []
             while True:
@@ -283,16 +309,15 @@ def main():
     """Main entry point"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Query gazette database')
+    parser = argparse.ArgumentParser(description='Query ilanlar database')
     parser.add_argument('--all', action='store_true', help='Show all announcements')
-    parser.add_argument('--mergers', action='store_true', help='Show merger announcements')
-    parser.add_argument('--address', action='store_true', help='Show address changes')
-    parser.add_argument('--compound', action='store_true', help='Show compound changes')
-    parser.add_argument('--stats', action='store_true', help='Show statistics')
+    parser.add_argument('--type', type=int, choices=range(1, 12), help='Filter by type (1-11)')
+    parser.add_argument('--stats', action='store_true', help='Show statistics by type')
+    parser.add_argument('--stats-city', action='store_true', help='Show statistics by city')
     parser.add_argument('--company', type=str, help='Search company by name')
     parser.add_argument('--mersis', type=str, help='Search by MERSİS number')
-    parser.add_argument('--fallback', action='store_true', help='Show fallback extractions')
-    parser.add_argument('--activity', action='store_true', help='Show company activity')
+    parser.add_argument('--city', type=int, help='Filter by city plaka code (1-81)')
+    parser.add_argument('--recent', type=int, help='Show recent announcements (days)')
     parser.add_argument('--limit', type=int, default=10, help='Limit results')
 
     args = parser.parse_args()
@@ -304,19 +329,16 @@ def main():
 
     # Handle command line arguments
     if args.all:
-        df = get_all_announcements(args.limit)
+        df = get_all_ilanlar(args.limit)
         print_df(df)
-    elif args.mergers:
-        df = get_mergers()
-        print_df(df)
-    elif args.address:
-        df = get_address_changes()
-        print_df(df)
-    elif args.compound:
-        df = get_compound_changes()
+    elif args.type:
+        df = get_ilanlar_by_type(args.type, args.limit)
         print_df(df)
     elif args.stats:
         df = get_statistics()
+        print_df(df)
+    elif args.stats_city:
+        df = get_statistics_by_city()
         print_df(df)
     elif args.company:
         df = search_company(args.company)
@@ -324,11 +346,11 @@ def main():
     elif args.mersis:
         df = get_company_by_mersis(args.mersis)
         print_df(df)
-    elif args.fallback:
-        df = get_fallback_extractions()
+    elif args.city:
+        df = get_ilanlar_by_city(args.city, args.limit)
         print_df(df)
-    elif args.activity:
-        df = get_company_activity()
+    elif args.recent:
+        df = get_recent_ilanlar(args.recent, args.limit)
         print_df(df)
 
 if __name__ == "__main__":

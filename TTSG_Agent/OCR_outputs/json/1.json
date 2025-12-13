@@ -9,15 +9,20 @@
       "metadata": {
         "gazette_date": "30 EKIM 2024",
         "gazette_number": 11196,
-        "registry_office": "İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_office": "T.C. İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
         "registry_number": "Unknown",
-        "mersis_no": "Unknown",
+        "mersis_no": "0463000447800017",
         "company_name": "HİLAL YAPI MALZEMELERİ İNŞAAT İMALAT İTHALAT İHRACAT SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
         "announcement_number": null
       },
       "announcement_type": "adres_değişikliği",
       "content": {
-        "address_changes": []
+        "old_address": null,
+        "new_address": "ATATÜRK MAH. ALEMDAĞ CAD. NECMETTIN ÖZTÜRK 1S MERKEZİ NO: 19 İÇ KAPI NO: 15 ÜMRANİYE / İSTANBUL",
+        "change_date": "30.10.2024",
+        "registered_matters": [
+          "Şirketin Merkezi"
+        ]
       },
       "raw_text": null,
       "extraction_success": true
@@ -26,9 +31,9 @@
       "metadata": {
         "gazette_date": "30 EKIM 2024",
         "gazette_number": 11196,
-        "registry_office": "ADANA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_office": "T.C. ADANA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
         "registry_number": "Unknown",
-        "mersis_no": "Unknown",
+        "mersis_no": "0948028286200010",
         "company_name": "YENİ ŞAHİNLER TAŞIMACILIK SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
         "announcement_number": null
       },
@@ -41,12 +46,23 @@
         ],
         "registration_date": "30.10.2024",
         "old_address": null,
-        "new_address": "Adana Nakliyeciler Sitesi. Sasa Yanı No:62",
+        "new_address": null,
         "old_capital": null,
         "new_capital": null,
         "capital_breakdown": null,
         "shareholders": null,
-        "notary_info": "Adana 11. Noterliği, 30.10.2024 tarih ve 43872 sayısı ile tasdikli (Unvan ve Amaç Konu Değişikliği Kararı), 25.10.2024 tarihli 2024/01 sayılı Genel Kurul Kararı"
+        "notary_info": {
+          "notary": "Adana 11. Noterliği",
+          "date": "30.10.2024",
+          "document_number": "43872",
+          "additional_documents": [
+            {
+              "type": "Genel Kurul Kararı",
+              "reference": "2024/01",
+              "date": "25.10.2024"
+            }
+          ]
+        }
       },
       "raw_text": null,
       "extraction_success": true
