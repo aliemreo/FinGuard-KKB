@@ -24,6 +24,8 @@ from enum import Enum
 from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
+import argparse
+# from rapidfuzz import fuzz, process
 
 # Load environment variables
 # Load environment variables from root
@@ -36,10 +38,11 @@ from layout_detector import analyze_page_layout, surya_layout_ocr
 # Set Tesseract path
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# Initialize OpenAI client
+# Initialize OpenAI client with timeout
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("OPENAI_API_BASE")
+    base_url=os.getenv("OPENAI_API_BASE"),
+    timeout=120.0  # 2 minute timeout for API calls
 )
 MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-oss-120b")
 
@@ -69,6 +72,7 @@ class AnnouncementType(str, Enum):
     BRANCH_ESTABLISHMENT = "şube_kuruluşu"
     ADDRESS_CHANGE = "adres_değişikliği"
     COMPOUND = "bileşik_değişiklik"
+    UNKNOWN = "unknown"
 
 class Company(BaseModel):
     name: str
@@ -114,10 +118,16 @@ class CompoundAnnouncement(BaseModel):
     shareholders: Optional[List[dict]] = None
     notary_info: Optional[str] = None
 
+class UnknownAnnouncement(BaseModel):
+    """Fallback model for announcement types not in the enum"""
+    original_detected_type: str = Field(description="The type detected by LLM that didn't match enum")
+    extracted_data: dict = Field(default_factory=dict, description="Generic extracted fields")
+    validation_error: Optional[str] = Field(default=None, description="Pydantic validation error")
+
 class GazetteAnnouncement(BaseModel):
     metadata: UniversalMetadata
     announcement_type: AnnouncementType
-    content: Union[MergerAnnouncement, BranchEstablishmentAnnouncement, AddressChangeAnnouncement, CompoundAnnouncement, dict]
+    content: Union[MergerAnnouncement, BranchEstablishmentAnnouncement, AddressChangeAnnouncement, CompoundAnnouncement, UnknownAnnouncement, dict]
     raw_text: Optional[str] = None
     extraction_success: bool = True
 
@@ -390,13 +400,87 @@ def extract_gazette_metadata(markdown_content: str) -> dict:
 
     return metadata
 
-def detect_announcement_types(gazette_content: str, model=None) -> List[DetectedAnnouncement]:
-    """Stage 1: Detect all announcements using OpenAI-compatible API"""
+def fuzzy_match_company(search_name: str, detected_announcements: List[DetectedAnnouncement], threshold: float = 75.0) -> List[DetectedAnnouncement]:
+    """
+    Filter announcements by company name using fuzzy matching.
+
+    Args:
+        search_name: Company name to search for (case-insensitive)
+        detected_announcements: List of detected announcements
+        threshold: Minimum similarity score (0-100), default 75.0
+
+    Returns:
+        Filtered list of announcements matching the search name
+    """
+    if not search_name or not detected_announcements:
+        return detected_announcements
+
+    matched = []
+    search_normalized = search_name.upper().strip()
+
+    print(f"\n    🔍 Filtering by company name: '{search_name}'", flush=True)
+    print(f"    📊 Similarity threshold: {threshold}%", flush=True)
+
+    for detected in detected_announcements:
+        if not detected.company_name:
+            continue
+
+        company_normalized = detected.company_name.upper().strip()
+
+        # Try multiple fuzzy matching strategies
+        scores = {
+            'ratio': fuzz.ratio(search_normalized, company_normalized),
+            'partial_ratio': fuzz.partial_ratio(search_normalized, company_normalized),
+            'token_sort_ratio': fuzz.token_sort_ratio(search_normalized, company_normalized),
+            'token_set_ratio': fuzz.token_set_ratio(search_normalized, company_normalized),
+        }
+
+        # Use the best score from all strategies
+        best_score = max(scores.values())
+        best_method = max(scores, key=scores.get)
+
+        if best_score >= threshold:
+            matched.append(detected)
+            print(f"    ✓ MATCH: {detected.company_name[:50]}", flush=True)
+            print(f"      └─ Score: {best_score:.1f}% ({best_method})", flush=True)
+            if detected.mersis_no:
+                print(f"      └─ MERSİS: {detected.mersis_no}", flush=True)
+
+    if matched:
+        print(f"\n    ✅ Found {len(matched)} matching announcement(s)", flush=True)
+    else:
+        print(f"\n    ⚠ No matches found above {threshold}% threshold", flush=True)
+        print(f"    → Processing entire gazette normally", flush=True)
+
+    return matched if matched else detected_announcements
+
+def detect_announcement_types(gazette_content: str, model=None, company_filter: str = None) -> List[DetectedAnnouncement]:
+    """Stage 1: Detect announcements using OpenAI-compatible API
+
+    Args:
+        gazette_content: The markdown content of the gazette
+        model: LLM model to use
+        company_filter: Optional company name to filter by (LLM will only detect this company)
+    """
     if model is None:
         model = MODEL_NAME
-    
+
+    # Add filter info to the prompt if company filter is provided
+    filter_instruction = ""
+    if company_filter:
+        filter_instruction = f"""
+IMPORTANT FILTERING INSTRUCTION:
+Only detect and return announcements for companies whose name contains or matches "{company_filter}".
+- Use fuzzy matching - the company name may have slight variations or OCR errors
+- Match partial names (e.g., "TURKCELL" should match "TURKCELL İLETİŞİM HİZMETLERİ A.Ş.")
+- Include branches/subsidiaries that contain this name
+- If no announcements match this company, return an empty array
+
+"""
+        print(f"    🔍 LLM filtering for company: '{company_filter}'", flush=True)
+
     print(f"    🤖 Calling LLM ({model}) for announcement detection...", flush=True)
-    system_prompt = """You are a Turkish Trade Registry Gazette analyzer expert. Identify and classify all announcements.
+    system_prompt = """You are a Turkish Trade Registry Gazette analyzer expert. Identify and classify announcements.
 
 Classify into ONE of these types:
 - "birleşme": Merger
@@ -412,17 +496,17 @@ Classify into ONE of these types:
 
 Return ONLY valid JSON."""
 
-    user_prompt = f"""Analyze this gazette and identify ALL announcements.
+    user_prompt = f"""{filter_instruction}Analyze this gazette and identify announcements.
 
 Return JSON with "announcements" array:
 - section_text: excerpt (100-300 chars)
 - announcement_type: one of the types above
 - mersis_no: MERSİS number (16 digits)
-- company_name: company name
+- company_name: company name (full name from the gazette)
 - registry_office: registry office name
 
 Document:
-{gazette_content[:8000]}
+{gazette_content[:64000]}
 
 Return format:
 {{
@@ -435,38 +519,65 @@ Return format:
       "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ"
     }}
   ]
-}}"""
+}}
+
+IMPORTANT: Analyze the ENTIRE document. Don't miss announcements at the end."""
 
     try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {'role': 'system', 'content': system_prompt},
-                {'role': 'user', 'content': user_prompt}
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.2,
-            max_tokens=2000
-        )
+        import time
+        max_retries = 2
+        retry_delay = 5  # seconds
 
-        result_text = response.choices[0].message.content
-        print(f"    ✅ LLM response received ({len(result_text)} chars)")
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    print(f"    🔄 Retry attempt {attempt + 1}/{max_retries}...", flush=True)
+                    time.sleep(retry_delay)
 
-        if '```json' in result_text:
-            result_text = result_text.split('```json')[1].split('```')[0].strip()
-        elif '```' in result_text:
-            result_text = result_text.split('```')[1].split('```')[0].strip()
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {'role': 'system', 'content': system_prompt},
+                        {'role': 'user', 'content': user_prompt}
+                    ],
+                    response_format={"type": "json_object"},
+                    temperature=0.2,
+                    max_tokens=8000
+                )
 
-        parsed = json.loads(result_text)
-        announcements = []
-        for item in parsed.get('announcements', []):
-            announcements.append(DetectedAnnouncement(**item))
+                result_text = response.choices[0].message.content
 
-        print(f"    ✅ Successfully parsed {len(announcements)} announcement(s)")
-        return announcements
+                # Handle None response from LLM
+                if result_text is None:
+                    print(f"    ⚠ LLM returned None response (possibly content filter or error)")
+                    if attempt < max_retries - 1:
+                        continue  # Retry
+                    return []
+
+                print(f"    ✅ LLM response received ({len(result_text)} chars)")
+
+                if '```json' in result_text:
+                    result_text = result_text.split('```json')[1].split('```')[0].strip()
+                elif '```' in result_text:
+                    result_text = result_text.split('```')[1].split('```')[0].strip()
+
+                parsed = json.loads(result_text)
+                announcements = []
+                for item in parsed.get('announcements', []):
+                    announcements.append(DetectedAnnouncement(**item))
+
+                print(f"    ✅ Successfully parsed {len(announcements)} announcement(s)")
+                return announcements
+
+            except Exception as retry_error:
+                if attempt < max_retries - 1:
+                    print(f"    ⚠ Attempt {attempt + 1} failed: {str(retry_error)[:100]}", flush=True)
+                    continue  # Retry
+                else:
+                    raise  # Re-raise on final attempt
 
     except Exception as e:
-        print(f"    ❌ Type detection failed: {e}")
+        print(f"    ❌ Type detection failed after {max_retries} attempts: {e}")
         return []
 
 def get_extraction_prompt_for_type(announcement_type: str, section_text: str) -> tuple:
@@ -636,8 +747,19 @@ Return comprehensive JSON with ALL information found."""
             'summary': f'Failed to extract {announcement_type}'
         }
 
-def extract_from_markdown(md_path: Path, output_json_path: Path) -> bool:
-    """Extract structured data from a markdown gazette"""
+def extract_from_markdown(md_path: Path, output_json_path: Path,
+                         company_filter: Optional[str] = None) -> bool:
+    """
+    Extract structured data from a markdown gazette
+
+    Args:
+        md_path: Path to markdown file
+        output_json_path: Path for output JSON
+        company_filter: Optional company name to filter by (LLM semantic matching)
+
+    Returns:
+        True if extraction succeeded, False otherwise
+    """
     try:
         extraction_start = datetime.now()
         print(f"\n  [STEP 2/2] Data Extraction: {md_path.name}", flush=True)
@@ -659,9 +781,15 @@ def extract_from_markdown(md_path: Path, output_json_path: Path) -> bool:
         else:
             print(f"    └─ No compound announcements found")
 
-        # Stage 1: Detect types
+        # Stage 1: Detect types (with optional company filter)
         print(f"    [Stage 2/3] Detecting announcement types (LLM Stage 1)...", flush=True)
-        detected_announcements = detect_announcement_types(gazette_content)
+        if company_filter:
+            print(f"    🔍 Filtering for company: '{company_filter}'", flush=True)
+
+        detected_announcements = detect_announcement_types(
+            gazette_content,
+            company_filter=company_filter
+        )
         print(f"    └─ Detected {len(detected_announcements)} announcement(s)", flush=True)
 
         # Override with compound detection
@@ -742,27 +870,25 @@ def extract_from_markdown(md_path: Path, output_json_path: Path) -> bool:
                     normalized_type
                 )
 
-                # Create announcement with fallback data and special marker
+                # Create announcement with fallback data and UNKNOWN type
                 try:
-                    # Try to use a valid enum type as placeholder
-                    fallback_type = "adres_değişikliği"  # Use as generic placeholder
+                    # Use the dedicated UNKNOWN enum value
+                    unknown_content = UnknownAnnouncement(
+                        original_detected_type=normalized_type,
+                        extracted_data=fallback_data if isinstance(fallback_data, dict) else {},
+                        validation_error=str(validation_error)[:200]
+                    )
 
                     announcement = GazetteAnnouncement(
                         metadata=metadata,
-                        announcement_type=fallback_type,
-                        content=fallback_data,
+                        announcement_type="unknown",
+                        content=unknown_content,
                         raw_text=relevant_section[:1000],  # Include more raw text
                         extraction_success=False  # Mark as fallback
                     )
 
-                    # Add metadata about the original type
-                    if isinstance(announcement.content, dict):
-                        announcement.content['_is_fallback'] = True
-                        announcement.content['_original_detected_type'] = normalized_type
-                        announcement.content['_validation_error'] = str(validation_error)[:200]
-
                     final_announcements.append(announcement)
-                    print(f"        ✅ Fallback extraction completed (generic data captured)")
+                    print(f"        ✅ Fallback extraction completed (UNKNOWN type, generic data captured)")
 
                 except Exception as fallback_error:
                     print(f"        ✗ Fallback also failed: {fallback_error}")
@@ -814,6 +940,14 @@ def extract_from_markdown(md_path: Path, output_json_path: Path) -> bool:
             }
         }
 
+        # Add filter settings if company filter was applied
+        if company_filter:
+            output_data['filter_settings'] = {
+                'company_filter': company_filter,
+                'filter_method': 'llm_semantic',  # LLM does the filtering, not fuzzy match
+                'filter_applied': True
+            }
+
         with open(output_json_path, 'w', encoding='utf-8') as f:
             json.dump(output_data, f, indent=2, ensure_ascii=False)
 
@@ -843,15 +977,67 @@ def extract_from_markdown(md_path: Path, output_json_path: Path) -> bool:
 # ============================================================================
 
 def main():
+    # Parse CLI arguments
+    parser = argparse.ArgumentParser(
+        description='Batch processing pipeline for Turkish Trade Registry Gazettes',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog='''
+Examples:
+  # Process all gazettes
+  python batch_process_gazettes.py
+
+  # Filter by company name (LLM semantic matching)
+  python batch_process_gazettes.py --name "MICROSOFT"
+
+  # Partial name matching works automatically
+  python batch_process_gazettes.py --name "TURKCELL"
+
+  # Process specific directory with filtering
+  python batch_process_gazettes.py --gazette-dir ./my_pdfs --name "ACME"
+        '''
+    )
+
+    parser.add_argument(
+        '--name',
+        type=str,
+        default=None,
+        help='Filter by company name using LLM semantic matching. '
+             'Example: "MICROSOFT" will match "MICROSOFT YAZILIM TİCARET A.Ş." '
+             'The LLM handles variations, OCR errors, and partial matches intelligently.'
+    )
+
+    parser.add_argument(
+        '--gazette-dir',
+        type=str,
+        default=None,
+        help='Directory containing gazette PDF files. Default: GAZETTE_DIR from .env or "scrapped_pdf_files"'
+    )
+
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default=None,
+        help='Output directory for markdown and JSON. Default: OUTPUT_DIR from .env or "OCR_outputs"'
+    )
+
+    args = parser.parse_args()
+
     print("="*80)
     print("🚀 Batch Gazette Processing Pipeline")
     print("="*80)
     print(f"⏱ Pipeline started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
-    # Configuration from environment variables
+    # Display filter settings if enabled
+    if args.name:
+        print("🔍 COMPANY NAME FILTER ENABLED (LLM Semantic Matching)")
+        print(f"   Search term: '{args.name}'")
+        print(f"   Method: AI-powered semantic matching")
+        print(f"   Note: Only matching companies will be extracted to save LLM costs\n")
+
+    # Configuration from environment variables or CLI args
     script_dir = Path(__file__).parent
-    gazette_dir = script_dir / os.getenv("GAZETTE_DIR", "scrapped_pdf_files")
-    output_dir = script_dir / os.getenv("OUTPUT_DIR", "OCR_outputs")
+    gazette_dir = script_dir / (args.gazette_dir or os.getenv("GAZETTE_DIR", "scrapped_pdf_files"))
+    output_dir = script_dir / (args.output_dir or os.getenv("OUTPUT_DIR", "OCR_outputs"))
 
     # Create directories
     print("📁 Setting up directories...")
@@ -940,7 +1126,11 @@ def main():
             except:
                 pass
         else:
-            if extract_from_markdown(md_path, json_path):
+            if extract_from_markdown(
+                md_path=md_path,
+                output_json_path=json_path,
+                company_filter=args.name
+            ):
                 total_extracted += 1
 
                 # Count fallbacks from new extraction
@@ -984,6 +1174,10 @@ def main():
     if total_fallbacks > 0:
         print(f"║  ⚠ Fallback extractions: {total_fallbacks:3d} (unknown types - review recommended)        ║")
     print(f"║  Time elapsed:         {elapsed_minutes}m {elapsed_secs}s                                               ║")
+    if args.name:
+        print("╠═══════════════════════════════════════════════════════════════════════════════╣")
+        print(f"║  🔍 Filter applied:    '{args.name[:50]:<50s}' ║")
+        print(f"║     Method:            LLM Semantic Matching                                  ║")
     print("╠═══════════════════════════════════════════════════════════════════════════════╣")
     print(f"║  Output Directory: {str(output_dir):<55s} ║")
     print(f"║    → Markdown: {str(output_dir / 'markdown'):<59s} ║")

@@ -1,0 +1,72 @@
+{
+  "gazette_metadata": {
+    "date": "16 EKİM 2025",
+    "number": 11438,
+    "page": 1
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "gazette_date": "16 EKİM 2025",
+        "gazette_number": 11438,
+        "registry_office": "İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0871054823800017",
+        "company_name": "TURKCELL ENERJİ ÇÖZÜMLERİ VE ELEKTRİK SATIŞ TİCARET ANONIM ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "toplantı_çağrısı",
+      "content": {
+        "ilan_sira_no": "226940",
+        "mersis_no": "0871054823800017",
+        "ticaret_sicil_dosya_no": "71395-5",
+        "company": {
+          "name": "TURKCELL ENERJİ ÇÖZÜMLERİ VE ELEKTRİK SATIŞ TİCARET ANONIM ŞIRKETİ",
+          "address": "Aydınevler İnönü Caddesi Küçükyalı Ofispark No:20 Maltepe/İstanbul"
+        },
+        "registration_date": "2025-10-15",
+        "registered_items": [
+          "Yönetim Kurulu",
+          "Yetkililer"
+        ],
+        "supporting_documents": [
+          {
+            "type": "Noterlik Tasdiki",
+            "notary": "Beyoğlu 18. Noterliği",
+            "date": "2025-10-13",
+            "number": "15841"
+          },
+          {
+            "type": "Yönetim Kurulu Kararı",
+            "date": "2025-01-10",
+            "number": "114"
+          }
+        ],
+        "board_members": [
+          {
+            "name": "ŞENOL KAZANCI",
+            "nationality": "Türkiye Cumhuriyeti",
+            "id_number": "217******36",
+            "address": "ISTANBUL / BEYKOZ",
+            "position": "Yönetim Kurulu Başkanı",
+            "term_end": "2026-09-26",
+            "reference_number": "20540772"
+          }
+        ]
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 1,
+    "successful_extractions": 1,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  },
+  "filter_settings": {
+    "company_filter": "TURKCELL",
+    "filter_method": "llm_semantic",
+    "filter_applied": true
+  }
+}

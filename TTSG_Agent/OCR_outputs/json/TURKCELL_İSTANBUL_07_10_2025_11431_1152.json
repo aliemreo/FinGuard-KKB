@@ -1,0 +1,133 @@
+{
+  "gazette_metadata": {
+    "date": null,
+    "number": 11431,
+    "page": 1
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "gazette_date": null,
+        "gazette_number": 11431,
+        "registry_office": "T.C. İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "Unknown",
+        "company_name": "TURKCELL ÖDEME VE ELEKTRONİK PARA HİZMETLERİ ANONİM ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "bileşik_değişiklik",
+      "content": {
+        "announcements": [
+          {
+            "company_name": "FAMİLY İÇ VE DIŞ TİCARET SANAYİ LİMİTED ŞİRKETİ",
+            "registered_matters": [
+              "Pay Devri",
+              "Müdürler / Yetkililer"
+            ],
+            "registration_date": "2025-10-07",
+            "old_address": null,
+            "new_address": "Pirireis Mah. F. Sultan Mehmet Cad. Gözde Apt No: 82 İç Kapı No: 2, İskenderun / Hatay",
+            "old_capital": null,
+            "new_capital": "200.000 TL",
+            "capital_breakdown": [
+              {
+                "shareholder": "AHMAD ALAMIN",
+                "shares": 30,
+                "share_value": "2.000 TL",
+                "total_amount": "60.000 TL"
+              },
+              {
+                "shareholder": "MUHAMMED EL EMİN",
+                "shares": 30,
+                "share_value": "2.000 TL",
+                "total_amount": "60.000 TL"
+              },
+              {
+                "shareholder": "MOHAMED 1ZZ ALDIN AL AMIN",
+                "shares": 40,
+                "share_value": "2.000 TL",
+                "total_amount": "80.000 TL"
+              }
+            ],
+            "shareholders": [
+              {
+                "name": "AHMAD ALAMIN",
+                "shares": 30,
+                "capital_contribution": "60.000 TL"
+              },
+              {
+                "name": "MUHAMMED EL EMİN",
+                "shares": 30,
+                "capital_contribution": "60.000 TL"
+              },
+              {
+                "name": "MOHAMED 1ZZ ALDIN AL AMIN",
+                "shares": 40,
+                "capital_contribution": "80.000 TL"
+              }
+            ],
+            "notary_info": {
+              "notary_office": "İskenderun 2. Noterliği",
+              "date": "2025-10-07",
+              "document_number": "26304",
+              "description": "Tasdikli"
+            }
+          },
+          {
+            "company_name": "FEATUREMİND YAZILIM OTOMASYON SANAYİ VE TİCARET ANONİM ŞİRKETİ",
+            "registered_matters": [
+              "Yönetim Kurulu / Yetkililer"
+            ],
+            "registration_date": "2025-10-07",
+            "old_address": null,
+            "new_address": "Gülbahçe Mah. İçmeler Cad. No: 14/1 İç Kapı No: BO1, Urla / İzmir",
+            "old_capital": null,
+            "new_capital": null,
+            "capital_breakdown": null,
+            "shareholders": null,
+            "notary_info": {
+              "notary_office": "İzmir 15. Noterliği",
+              "date": "2025-10-06",
+              "document_number": "13304",
+              "description": "Tasdikli"
+            }
+          },
+          {
+            "company_name": "ZENTÜRK YAPI İNŞAAT TAAHHÜT SANAYİ VE TİCARET LİMİTED ŞİRKETİ",
+            "registered_matters": [
+              "Şirketin Unvanı",
+              "Şirketin Merkezi",
+              "Sermaye Ve Pay Senetlerinin"
+            ],
+            "registration_date": "2025-10-07",
+            "old_address": null,
+            "new_address": "Kemalettin Mah. Yeldeğirmeni Sk. Saim Toksöz Apt. No: 32a, Çorlu / Tekirdağ",
+            "old_capital": null,
+            "new_capital": null,
+            "capital_breakdown": null,
+            "shareholders": null,
+            "notary_info": {
+              "notary_office": "T.c. Çorlu 6. Noterliği",
+              "date": "2025-10-07",
+              "document_number": "3912",
+              "description": "Tasdikli"
+            }
+          }
+        ]
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 1,
+    "successful_extractions": 1,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  },
+  "filter_settings": {
+    "company_filter": "TURKCELL",
+    "filter_method": "llm_semantic",
+    "filter_applied": true
+  }
+}

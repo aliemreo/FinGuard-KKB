@@ -1,0 +1,52 @@
+{
+  "gazette_metadata": {
+    "date": null,
+    "number": 11432,
+    "page": 1
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "gazette_date": null,
+        "gazette_number": 11432,
+        "registry_office": "İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0877001340600017",
+        "company_name": "TURKCELL İLETİŞİM HİZMETLERİ ANONİM ŞİRKETİ",
+        "announcement_number": null
+      },
+      "announcement_type": "bileşik_değişiklik",
+      "content": {
+        "registered_matters": [
+          "Yönetim Kurulu / Yetkililer",
+          "Görev dağılımındaki değişiklik"
+        ],
+        "registration_date": "2025-10-08",
+        "old_address": "Aydınevler Mah. İsmet İnönü Cad. Küçükyalı Ofis Park B Blok No: 20, Maltepe / İstanbul",
+        "new_address": null,
+        "old_capital": null,
+        "new_capital": null,
+        "capital_breakdown": null,
+        "shareholders": null,
+        "notary_info": {
+          "notary_office": "Beyoğlu 18. Noterliği",
+          "notary_date": "2025-10-03",
+          "notary_number": "15325"
+        }
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 1,
+    "successful_extractions": 1,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  },
+  "filter_settings": {
+    "company_filter": "TURKCELL",
+    "filter_method": "llm_semantic",
+    "filter_applied": true
+  }
+}
