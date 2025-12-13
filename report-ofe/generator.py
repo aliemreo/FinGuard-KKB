@@ -1,7 +1,17 @@
 import json
 import os
+import argparse
 from datetime import datetime
 from jinja2 import Template
+
+# ==========================================
+# 0. ARGUMENT PARSING
+# ==========================================
+parser = argparse.ArgumentParser(description="Generate FinGuard Intelligence Report")
+parser.add_argument("--start-date", type=str, default="", help="Start date (dd.mm.yyyy)")
+parser.add_argument("--end-date", type=str, default="", help="End date (dd.mm.yyyy)")
+parser.add_argument("--company-name", type=str, default="", help="Company name")
+args = parser.parse_args()
 
 # ==========================================
 # 1. CONFIGURATION & DATA LOADING
@@ -79,6 +89,37 @@ def get_ilan_type(ilan_turu):
     return mapping.get(ilan_turu, "Bilinmiyor")
 
 
+def stringify_value(val):
+    """Converts nested dicts/lists to readable string format"""
+    if val is None:
+        return ""
+    if isinstance(val, str):
+        return val
+    if isinstance(val, (int, float)):
+        return str(val)
+    if isinstance(val, dict):
+        # Extract meaningful fields from common dict types
+        if 'name' in val:
+            return val['name']
+        if 'total_capital_TL' in val:
+            parts = []
+            if val.get('total_shares'):
+                parts.append(f"{val['total_shares']} pay")
+            if val.get('total_capital_TL'):
+                parts.append(f"{val['total_capital_TL']:,.0f} TL")
+            return ', '.join(parts) if parts else str(val)
+        # Generic dict: show key=value pairs for simple values only
+        simple_parts = []
+        for k, v in val.items():
+            if isinstance(v, (str, int, float)) and v:
+                simple_parts.append(f"{k}: {v}")
+        return ', '.join(simple_parts) if simple_parts else ""
+    if isinstance(val, list):
+        items = [stringify_value(item) for item in val if stringify_value(item)]
+        return ', '.join(items)
+    return str(val)
+
+
 # ==========================================
 # 3. PROCESSORS
 # ==========================================
@@ -129,27 +170,49 @@ for item in data_buckets["sicil"]:
     ticaret_sicil_no = item.get("ticaret_sicil_no", "-")
     ilan_type = get_ilan_type(item.get("ilan_turu"))
 
-    # Extract registered matters / events
+    # Extract registered matters from detaylar if present
     registered_matters = []
-    if item.get("registered_matters"):
+    det = item.get("detaylar", {})
+    if det and det.get("registered_matters"):
+        registered_matters = det["registered_matters"]
+    elif item.get("registered_matters"):
         registered_matters = item["registered_matters"]
 
-    # Build details from detaylar field (removed metin as requested)
+    # Build details from detaylar field
     details_parts = []
-    det = item.get("detaylar", {})
     if det:
-        for k, v in det.items():
-            if v:
-                label = k.replace("_", " ").title()
-                # Translate common keys to Turkish
-                translations = {
-                    "Old Address": "Eski Adres",
-                    "New Address": "Yeni Adres",
-                    "Old Capital": "Eski Sermaye",
-                    "New Capital": "Yeni Sermaye",
-                }
-                label = translations.get(label, label)
-                details_parts.append(f"{label}: {v}")
+        if det.get("new_address"):
+            details_parts.append(f"Yeni Adres: {det['new_address']}")
+        if det.get("old_address"):
+            details_parts.append(f"Eski Adres: {det['old_address']}")
+        if det.get("new_capital"):
+            details_parts.append(f"Yeni Sermaye: {det['new_capital']}")
+        if det.get("old_capital"):
+            details_parts.append(f"Eski Sermaye: {det['old_capital']}")
+        if det.get("capital_breakdown"):
+            details_parts.append(f"Sermaye: {stringify_value(det['capital_breakdown'])}")
+        if det.get("shareholders"):
+            details_parts.append(f"Pay Sahipleri: {stringify_value(det['shareholders'])}")
+        
+        # Handle notary_info as formatted list
+        notary_info = det.get("notary_info", [])
+        if notary_info and isinstance(notary_info, list):
+            notary_texts = []
+            for n in notary_info:
+                if isinstance(n, dict):
+                    parts = []
+                    if n.get("notary"):
+                        parts.append(n["notary"])
+                    if n.get("date"):
+                        parts.append(n["date"])
+                    if n.get("document_number"):
+                        parts.append(f"No: {n['document_number']}")
+                    if n.get("description"):
+                        parts.append(n["description"])
+                    if parts:
+                        notary_texts.append(" - ".join(parts))
+            if notary_texts:
+                details_parts.append("Noter: " + " | ".join(notary_texts))
 
     processed_report["sicil_items"].append(
         {
@@ -161,7 +224,7 @@ for item in data_buckets["sicil"]:
             "ticaret_sicil_no": ticaret_sicil_no,
             "ilan_type": ilan_type,
             "registered_matters": registered_matters,
-            "details": " • ".join(details_parts) if details_parts else "-",
+            "details": " • ".join(details_parts) if details_parts else "",
         }
     )
 
@@ -248,23 +311,46 @@ html_template = """
 
         .main-header { 
             border-bottom: 3px solid #0f172a;
-            padding-bottom: 1.5rem; 
-            margin-bottom: 3rem;
-            background: linear-gradient(to right, #f8fafc, #ffffff);
-            padding: 2rem;
+            padding: 2.5rem 2rem 2rem 2rem;
             margin: -2rem -2rem 3rem -2rem;
+            background: #ffffff;
         }
         .main-header h1 { 
-            font-size: 2rem; 
-            font-weight: 700; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
             margin: 0;
-            color: #0f172a;
-            letter-spacing: -0.5px;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
-        .main-header p {
-            color: #64748b;
-            margin-top: 0.5rem;
+        .main-header .company-name {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0.75rem 0 1.25rem 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .main-header .report-info {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .main-header .report-period {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: #ffffff;
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
             font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .main-header .report-date {
+            color: #64748b;
+            font-size: 0.85rem;
             font-weight: 500;
         }
         
@@ -273,15 +359,17 @@ html_template = """
             font-weight: 700; 
             margin: 3rem 0 1.5rem 0; 
             padding: 0.75rem 1rem;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #ffffff;
+            background: #1e3a5f !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color: #ffffff !important;
             border-radius: 8px;
             display: flex;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }
         .section-title span {
             letter-spacing: 0.3px;
+            color: #ffffff !important;
         }
 
         .card {
@@ -403,14 +491,15 @@ html_template = """
 <body>
 
     <div class="main-header">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>FinGuard İstihbarat Raporu</h1>
-            <div style="text-align: right; font-size: 0.85rem;">
-                <div style="font-weight: 600; color: #334155;">Rapor Dönemi</div>
-                <div style="color: #64748b;">{{ start_date }} - {{ end_date }}</div>
+        <h1>FinGuard İstihbarat Raporu</h1>
+        <div class="company-name">{{ company_name }}</div>
+        <div class="report-info">
+            <div class="report-period">
+                <span>📅</span>
+                <span>{{ start_date }} — {{ end_date }}</span>
             </div>
+            <div class="report-date">Oluşturulma: {{ current_date }}</div>
         </div>
-        <p>Gizli Analiz • {{ current_date }}</p>
     </div>
 
     <!-- IHALE (TENDER BANS) SECTION - FIRST -->
@@ -568,16 +657,25 @@ html_template = """
 # 5. RENDER & SAVE
 # ==========================================
 template = Template(html_template)
+
+# Use CLI args if provided, otherwise fall back to calculated dates
+report_company = args.company_name if args.company_name else "Şirket Bilgisi Belirtilmedi"
+report_start = args.start_date if args.start_date else min_date
+report_end = args.end_date if args.end_date else max_date
+
 html_output = template.render(
     news_items=processed_report["news_items"],
     sicil_items=processed_report["sicil_items"],
     ihale_items=processed_report["ihale_items"],
     current_date=datetime.now().strftime("%d.%m.%Y"),
-    start_date=min_date,
-    end_date=max_date,
+    start_date=report_start,
+    end_date=report_end,
+    company_name=report_company,
 )
 
 output_filename = "Final_Report.html"
+pdf_filename = "Final_Report.pdf"
+
 try:
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write(html_output)
@@ -585,5 +683,33 @@ try:
     print(
         f"   📊 İstatistikler: {len(processed_report['ihale_items'])} İhale, {len(processed_report['sicil_items'])} Sicil, {len(processed_report['news_items'])} Haber"
     )
+    
+    # Generate PDF using pdfkit (requires wkhtmltopdf installed)
+    # In Docker: apt-get install -y wkhtmltopdf
+    try:
+        import pdfkit
+        import shutil
+        
+        # Find wkhtmltopdf - works on Linux (Docker) and Windows
+        wkhtmltopdf_path = shutil.which('wkhtmltopdf')
+        if not wkhtmltopdf_path:
+            # Try common Windows paths
+            for path in [r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe',
+                        r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe']:
+                if os.path.exists(path):
+                    wkhtmltopdf_path = path
+                    break
+        
+        if wkhtmltopdf_path:
+            config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
+            pdfkit.from_file(output_filename, pdf_filename, configuration=config)
+        else:
+            pdfkit.from_file(output_filename, pdf_filename)
+        print(f"✅ {pdf_filename} başarıyla oluşturuldu!")
+    except ImportError:
+        print("⚠️ pdfkit yüklü değil. PDF için: pip install pdfkit")
+    except Exception as pdf_error:
+        print(f"⚠️ PDF oluşturma hatası: {pdf_error}")
+
 except Exception as e:
     print(f"❌ Dosya yazma hatası: {e}")

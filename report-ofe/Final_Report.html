@@ -28,23 +28,46 @@
 
         .main-header { 
             border-bottom: 3px solid #0f172a;
-            padding-bottom: 1.5rem; 
-            margin-bottom: 3rem;
-            background: linear-gradient(to right, #f8fafc, #ffffff);
-            padding: 2rem;
+            padding: 2.5rem 2rem 2rem 2rem;
             margin: -2rem -2rem 3rem -2rem;
+            background: #ffffff;
         }
         .main-header h1 { 
-            font-size: 2rem; 
-            font-weight: 700; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
             margin: 0;
-            color: #0f172a;
-            letter-spacing: -0.5px;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
-        .main-header p {
-            color: #64748b;
-            margin-top: 0.5rem;
+        .main-header .company-name {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0.75rem 0 1.25rem 0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .main-header .report-info {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .main-header .report-period {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: #ffffff;
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
             font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .main-header .report-date {
+            color: #64748b;
+            font-size: 0.85rem;
             font-weight: 500;
         }
         
@@ -53,15 +76,17 @@
             font-weight: 700; 
             margin: 3rem 0 1.5rem 0; 
             padding: 0.75rem 1rem;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #ffffff;
+            background: #1e3a5f !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color: #ffffff !important;
             border-radius: 8px;
             display: flex;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         }
         .section-title span {
             letter-spacing: 0.3px;
+            color: #ffffff !important;
         }
 
         .card {
@@ -183,14 +208,15 @@
 <body>
 
     <div class="main-header">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>FinGuard İstihbarat Raporu</h1>
-            <div style="text-align: right; font-size: 0.85rem;">
-                <div style="font-weight: 600; color: #334155;">Rapor Dönemi</div>
-                <div style="color: #64748b;">15.09.2024 - 13.12.2025</div>
+        <h1>FinGuard İstihbarat Raporu</h1>
+        <div class="company-name">aselsan</div>
+        <div class="report-info">
+            <div class="report-period">
+                <span>📅</span>
+                <span>01.01.2025 — 31.12.2025</span>
             </div>
+            <div class="report-date">Oluşturulma: 14.12.2025</div>
         </div>
-        <p>Gizli Analiz • 14.12.2025</p>
     </div>
 
     <!-- IHALE (TENDER BANS) SECTION - FIRST -->
@@ -298,20 +324,24 @@
                 <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <span class="ilan-type-badge">Tasfiye</span>
-                            <span class="meta-tag">T.C. İstanbul Ticaret Sicili Müdürlüğü</span>
-                            <span class="date">30.10.2024</span>
+                            <span class="ilan-type-badge">Sermaye Taahhüdü</span>
+                            <span class="meta-tag">İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ</span>
+                            <span class="date">17.07.2025</span>
                         </div>
-                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">Aselsan Elektronik Sanayi ve Ticaret A.Ş.</h3>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">TURKCELL ÖDEME VE ELEKTRONİK PARA HİZMETLERİ ANONIM ŞİRKETİ</h3>
                         
-                        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px;">
-                            <strong>Ticaret Sicil No:</strong> 123456
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Yönetim Kurulu / Yetkililer</span>
+                            
+                                <span class="matter-badge">Denetçiler</span>
+                            
                         </div>
-                        
                         
                     </div>
                     <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
-                        TSG-2024-001
+                        None
                     </div>
                 </div>
                 
@@ -321,7 +351,7 @@
                 
                 
                 <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
-                    Eski Adres: mahalle • Yeni Adres: Yeni Adres
+                    Yeni Adres: Aydınevler Mah. İsmet İnönü Cad. Turkcell Blok No: 36 Maltepe / İstanbul • Noter: Beyoğlu 18. Noterliği - 2025-07-10 - No: 11046 - Tasdıklı | Beyoğlu 18. Noterliği - 2025-07-10 - No: 11020 - Tasdıklı | 2025-07-02 - No: 377 - Yönetim Kurulu Kararı
                 </p>
                 
             </div>
@@ -332,30 +362,348 @@
                 <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
                     <div style="flex: 1;">
                         <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                            <span class="ilan-type-badge">Mal Varlığı Devri</span>
-                            <span class="meta-tag">T.C. Ankara Ticaret Sicili Müdürlüğü</span>
-                            <span class="date">30.10.2024</span>
+                            <span class="ilan-type-badge">Sermaye Taahhüdü</span>
+                            <span class="meta-tag">İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ</span>
+                            <span class="date">17.07.2025</span>
                         </div>
-                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">Aselsan Savunma Sistemleri A.Ş.</h3>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">YENİÇAĞ TOPTAN GIDA DAĞITIM TİCARET LİMİTED ŞİRKETİ</h3>
                         
-                        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px;">
-                            <strong>Ticaret Sicil No:</strong> 789012
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Pay Devri</span>
+                            
+                                <span class="matter-badge">Müdürler / Yetkililer</span>
+                            
                         </div>
-                        
                         
                     </div>
                     <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
-                        TSG-2024-002
+                        None
                     </div>
                 </div>
                 
                 <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
-                    <strong>Adres:</strong> Ankara Teknokent ODTÜ Kampüsü
+                    <strong>Adres:</strong> Sanayi Mah. Teknopark Bul. No: 1/10b Pendik / İstanbul
                 </p>
                 
                 
                 <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
-                    Eski Sermaye: 10.000.000 TL • Yeni Sermaye: 25.000.000 TL
+                    Yeni Adres: Özevler Mah. 362 Cad. Eminler Apt No: 36a Yenimahalle / Ankara • Yeni Sermaye: 200000.0 • Sermaye: 1000 pay, 200,000 TL • Pay Sahipleri: ERKAN KOCA • Noter: Ankara 1. Noterliği - 2025-07-16 - No: 5140 - Tasdikli | 2025-07-16 - No: 2025/1 - Genel Kurul Kararı
+                </p>
+                
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Sermaye Taahhüdü</span>
+                            <span class="meta-tag">İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ</span>
+                            <span class="date">17.07.2025</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">OMER GÖKÇE AE7 OTOMOTİV</h3>
+                        
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Kuruluş</span>
+                            
+                        </div>
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        None
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> Sanayi Mah. Teknopark Bul. No: 1/10b Pendik / İstanbul
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    Yeni Adres: Beştelsiz Mah. 4. Yol Sk. No: 13a Zeytinburnu / İstanbul
+                </p>
+                
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Sermaye Taahhüdü</span>
+                            <span class="meta-tag">T.C. İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ</span>
+                            <span class="date">11.08.2025</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">TURKCELL DJITAL SIGORTA ANONIM ŞİRKETİ</h3>
+                        
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Denetçiler</span>
+                            
+                                <span class="matter-badge">Kişi Bilgileri Değişikliği</span>
+                            
+                        </div>
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        None
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> -
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    Noter: 2025-07-31
+                </p>
+                
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Sermaye Taahhüdü</span>
+                            <span class="meta-tag">T.C. İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ</span>
+                            <span class="date">11.08.2025</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">TURKCELL DJITAL SIGORTA ANONIM ŞİRKETİ</h3>
+                        
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Yönetim Kurulu / Yetkililer</span>
+                            
+                                <span class="matter-badge">Tek Ortaklık Bilgisi</span>
+                            
+                        </div>
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        None
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> -
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    Pay Sahipleri: KENAN DEVLETYAN • Noter: 2025-08-05 | 2025-08-08 | 2025-08-08
+                </p>
+                
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Sermaye Taahhüdü</span>
+                            <span class="meta-tag">İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ</span>
+                            <span class="date">-</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">TURKCELL ENERJİ ÇÖZÜMLERİ VE ELEKTRİK SATIŞ TİCARET ANONİM ŞİRKETİ</h3>
+                        
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Y</span>
+                            
+                                <span class="matter-badge">ö</span>
+                            
+                                <span class="matter-badge">n</span>
+                            
+                                <span class="matter-badge">e</span>
+                            
+                                <span class="matter-badge">t</span>
+                            
+                                <span class="matter-badge">i</span>
+                            
+                                <span class="matter-badge">m</span>
+                            
+                                <span class="matter-badge"> </span>
+                            
+                                <span class="matter-badge">K</span>
+                            
+                                <span class="matter-badge">u</span>
+                            
+                                <span class="matter-badge">r</span>
+                            
+                                <span class="matter-badge">u</span>
+                            
+                                <span class="matter-badge">l</span>
+                            
+                                <span class="matter-badge">u</span>
+                            
+                                <span class="matter-badge"> </span>
+                            
+                                <span class="matter-badge">/</span>
+                            
+                                <span class="matter-badge"> </span>
+                            
+                                <span class="matter-badge">Y</span>
+                            
+                                <span class="matter-badge">e</span>
+                            
+                                <span class="matter-badge">t</span>
+                            
+                                <span class="matter-badge">k</span>
+                            
+                                <span class="matter-badge">i</span>
+                            
+                                <span class="matter-badge">l</span>
+                            
+                                <span class="matter-badge">i</span>
+                            
+                                <span class="matter-badge">l</span>
+                            
+                                <span class="matter-badge">e</span>
+                            
+                                <span class="matter-badge">r</span>
+                            
+                        </div>
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        None
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> -
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    Yeni Adres: Aydınevler İnönü Caddesi Küçükyalı Ofispark No:20 Maltepe/İstanbul
+                </p>
+                
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Sermaye Taahhüdü</span>
+                            <span class="meta-tag">İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ</span>
+                            <span class="date">-</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">TURKCELL SATIŞ ANONİM ŞİRKETİ</h3>
+                        
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Yönetim Kurulu / Yetkililer</span>
+                            
+                                <span class="matter-badge">Görev dağılımındaki değişiklik</span>
+                            
+                        </div>
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        None
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> -
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    Eski Adres: İstanbul / Kadıköy (address of former authorized representative Arzu Canik, ID 421**60)
+                </p>
+                
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Sermaye Taahhüdü</span>
+                            <span class="meta-tag">İSTANBUL TİCARET SİCİLİ MÜDÜRÜĞÜ</span>
+                            <span class="date">19.09.2025</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">TURKCELL TEKNOLOJİ ARAŞTIRMA VE GELİŞTİRME ANONİM ŞİRKETİ</h3>
+                        
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Yönetim Kurulu / Yetkililer</span>
+                            
+                                <span class="matter-badge">Görev dağılımındaki değişiklik (Yetki ve imza yetkilisinin sona ermesi)</span>
+                            
+                        </div>
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        None
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> -
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    Eski Adres: Aydınevler Mah. İnönü Cad. Küçükyalı Ofispark No:36 Maltepe/İstanbul
+                </p>
+                
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Birleşme</span>
+                            <span class="meta-tag">İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ</span>
+                            <span class="date">16.10.2025</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">TURKCELL ENERJİ ÇÖZÜMLERİ VE ELEKTRİK SATIŞ TİCARET ANONIM ŞİRKETİ</h3>
+                        
+                        
+                        <div style="margin-top: 6px;">
+                            
+                                <span class="matter-badge">Yönetim Kurulu</span>
+                            
+                                <span class="matter-badge">Yetkililer</span>
+                            
+                        </div>
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        None
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> -
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    
                 </p>
                 
             </div>
