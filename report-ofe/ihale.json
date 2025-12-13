@@ -1,0 +1,42 @@
+[
+    {
+        "ihale_kayit_numarasi": "2015/59704",
+        "yasaklama_karari_veren_bakanlik_kurum": "Gençlik ve Spor Bakanlığı",
+        "ihaleyi_yapan_idarenin_adi": "Osmaniye Gençlik ve Spor İl Müdürlüğü",
+        "yasakli_adi": "Sert Emlak Otomotiv Taşımacılık İnşaat Temizlik Orman Ürünleri Turizm Ticaret Limited Şirketi",
+        "yasakli_tc_kimlik_no": "",
+        "yasakli_vergi_kimlik_no": "7630582350",
+        "ortaklar": [],
+        "yasaklama_kanun_dayanagi": "4735 KİK",
+        "yasaklama_kanun_kapsami": "",
+        "yasaklama_suresi": "2 yıl"
+    },
+    {
+        "ihale_kayit_numarasi": "2023/892634",
+        "yasaklama_karari_veren_bakanlik_kurum": "YÜKSEKÖĞRETİM KURUMU",
+        "ihaleyi_yapan_idarenin_adi": "HAKKARİ ÜNİVERSİTESİ",
+        "yasakli_adi": "GÜNBEY YAPI ANONİM ŞİRKETİ",
+        "yasakli_tc_kimlik_no": "",
+        "yasakli_vergi_kimlik_no": "3880784768",
+        "ortaklar": [
+            {
+                "ortak_adi_unvani": "Çayan ÇİÇEK",
+                "ortak_tc_kimlik_no": "18800064726",
+                "ortak_vergi_kimlik_no": ""
+            },
+            {
+                "ortak_adi_unvani": "Jane Doe",
+                "ortak_tc_kimlik_no": "1877706476",
+                "ortak_vergi_kimlik_no": "vknvknvkn"
+            },
+            {
+                "ortak_adi_unvani": "John Doe",
+                "ortak_tc_kimlik_no": "3874706476",
+                "ortak_vergi_kimlik_no": "VKNVNKVKN"
+            }
+        ],
+        "yasaklama_kanun_dayanagi": "4734 KİK",
+        "yasaklama_kanun_kapsami": "Tüm İhalelerden",
+        "yasaklama_suresi": "6 ay"
+    }
+]

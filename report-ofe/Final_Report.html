@@ -1,0 +1,1155 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { 
+            size: A4; 
+            margin: 2.5cm; 
+        }
+        @media print {
+            .page-break { page-break-after: always; }
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+            color: #1e293b; 
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0;
+            background: #ffffff;
+        }
+
+        .main-header { 
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 1.5rem; 
+            margin-bottom: 3rem;
+            background: linear-gradient(to right, #f8fafc, #ffffff);
+            padding: 2rem;
+            margin: -2rem -2rem 3rem -2rem;
+        }
+        .main-header h1 { 
+            font-size: 2rem; 
+            font-weight: 700; 
+            margin: 0;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+        }
+        .main-header p {
+            color: #64748b;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .section-title { 
+            font-size: 1.3rem; 
+            font-weight: 700; 
+            margin: 3rem 0 1.5rem 0; 
+            padding: 0.75rem 1rem;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #ffffff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+        .section-title span {
+            letter-spacing: 0.3px;
+        }
+
+        .card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.08);
+            margin-bottom: 1.2rem;
+            background: #ffffff;
+            break-inside: avoid;
+            overflow: hidden;
+        }
+        .card-content { 
+            padding: 1.25rem; 
+        }
+
+        .badge {
+            display: inline-block; 
+            padding: 2px 10px; 
+            border-radius: 9999px;
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            text-transform: uppercase;
+        }
+        .badge-positive { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .badge-negative { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .badge-neutral { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        
+        .matter-badge {
+            display: inline-block;
+            background: #1e3a8a;
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            border: none;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .ilan-type-badge {
+            display: inline-block;
+            background: #6366f1;
+            color: #ffffff;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            letter-spacing: 0.2px;
+        }
+        
+        .meta-tag { 
+            background: #e0e7ff;
+            color: #3730a3; 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            font-size: 0.7rem; 
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .date { 
+            font-size: 0.8rem; 
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        a.button {
+            display: inline-block; 
+            margin-top: 12px; 
+            font-size: 0.85rem; 
+            color: #2563eb;
+            text-decoration: none; 
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+        a.button:hover { 
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 0.85rem; 
+            margin-top: 0.5rem; 
+        }
+        th { 
+            text-align: left; 
+            padding: 0.85rem; 
+            background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+            color: #475569; 
+            font-weight: 600; 
+            border-bottom: 2px solid #cbd5e1; 
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        td { 
+            padding: 0.85rem; 
+            border-bottom: 1px solid #f1f5f9; 
+            vertical-align: top; 
+        }
+        tbody tr {
+            transition: background-color 0.2s ease;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #fafbfc;
+        }
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>FinGuard İstihbarat Raporu</h1>
+            <div style="text-align: right; font-size: 0.85rem;">
+                <div style="font-weight: 600; color: #334155;">Rapor Dönemi</div>
+                <div style="color: #64748b;">15.09.2024 - 13.12.2025</div>
+            </div>
+        </div>
+        <p>Gizli Analiz • 14.12.2025</p>
+    </div>
+
+    <!-- IHALE (TENDER BANS) SECTION - FIRST -->
+    <div class="section-title">
+        <span>🚫 Kamu İhale Yasaklıları</span>
+    </div>
+
+    
+        <div class="card">
+            <div class="card-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:12%">İhale Kayıt No</th>
+                            <th style="width:22%">İhale Yasaklısı Kurum</th>
+                            <th style="width:20%">Yasaklama Kararı Veren Bakanlık / İhaleyi Yapan İdare</th>
+                            <th style="width:18%">Ortaklar</th>
+                            <th style="width:14%">Kanun Kapsamı</th>
+                            <th style="width:14%">Yasak Kapsam Süresi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td style="font-size:0.75rem; color:#64748b; font-family: 'Courier New', monospace;">2015/59704</td>
+                            <td>
+                                <div style="font-weight:600; color:#0f172a; font-size:0.85rem;">Sert Emlak Otomotiv Taşımacılık İnşaat Temizlik Orman Ürünleri Turizm Ticaret Limited Şirketi</div>
+                                <div style="font-size:0.7rem; color:#64748b; margin-top:3px;">
+                                    
+                                    
+                                        <span style="background:#f1f5f9; padding:2px 6px; border-radius:3px;">VKN: 7630582350</span>
+                                    
+                                </div>
+                            </td>
+                            <td style="font-size:0.8rem;">
+                                <div style="font-weight:600; color:#334155; font-size:0.82rem;">Gençlik ve Spor Bakanlığı</div>
+                                <div style="font-size:0.75rem; color:#64748b; margin-top:3px;">Osmaniye Gençlik ve Spor İl Müdürlüğü</div>
+                            </td>
+                            <td style="font-size:0.75rem; color:#475569;">
+                                
+                                    <span style="color:#cbd5e1;">—</span>
+                                
+                            </td>
+                            <td>
+                                <div style="font-size:0.75rem; font-weight:600; color:#1e40af; background:#dbeafe; padding:3px 8px; border-radius:4px; display:inline-block;">4735 KİK</div>
+                                
+                            </td>
+                            <td>
+                                <div style="font-weight:600; font-size:0.82rem; color:#0f172a;">2 yıl</div>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <td style="font-size:0.75rem; color:#64748b; font-family: 'Courier New', monospace;">2023/892634</td>
+                            <td>
+                                <div style="font-weight:600; color:#0f172a; font-size:0.85rem;">GÜNBEY YAPI ANONİM ŞİRKETİ</div>
+                                <div style="font-size:0.7rem; color:#64748b; margin-top:3px;">
+                                    
+                                    
+                                        <span style="background:#f1f5f9; padding:2px 6px; border-radius:3px;">VKN: 3880784768</span>
+                                    
+                                </div>
+                            </td>
+                            <td style="font-size:0.8rem;">
+                                <div style="font-weight:600; color:#334155; font-size:0.82rem;">YÜKSEKÖĞRETİM KURUMU</div>
+                                <div style="font-size:0.75rem; color:#64748b; margin-top:3px;">HAKKARİ ÜNİVERSİTESİ</div>
+                            </td>
+                            <td style="font-size:0.75rem; color:#475569;">
+                                
+                                    
+                                        <div style="margin-bottom:4px; padding-left:6px; border-left:2px solid #e2e8f0;">Çayan ÇİÇEK (TC: 18800064726)</div>
+                                    
+                                        <div style="margin-bottom:4px; padding-left:6px; border-left:2px solid #e2e8f0;">Jane Doe (TC: 1877706476)</div>
+                                    
+                                        <div style="margin-bottom:4px; padding-left:6px; border-left:2px solid #e2e8f0;">John Doe (TC: 3874706476)</div>
+                                    
+                                
+                            </td>
+                            <td>
+                                <div style="font-size:0.75rem; font-weight:600; color:#1e40af; background:#dbeafe; padding:3px 8px; border-radius:4px; display:inline-block;">4734 KİK</div>
+                                
+                                    <div style="font-size:0.7rem; color:#64748b; margin-top:4px;">Tüm İhalelerden</div>
+                                
+                            </td>
+                            <td>
+                                <div style="font-weight:600; font-size:0.82rem; color:#0f172a;">6 ay</div>
+                            </td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    
+
+    <!-- SICIL (TRADE REGISTRY) SECTION - SECOND -->
+    <div class="section-title" style="page-break-before: always;">
+        <span>🏛️ Ticaret Sicil İlanları</span>
+    </div>
+
+    
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Tasfiye</span>
+                            <span class="meta-tag">T.C. İstanbul Ticaret Sicili Müdürlüğü</span>
+                            <span class="date">30.10.2024</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">Aselsan Elektronik Sanayi ve Ticaret A.Ş.</h3>
+                        
+                        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px;">
+                            <strong>Ticaret Sicil No:</strong> 123456
+                        </div>
+                        
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        TSG-2024-001
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> Sanayi Mah. Teknopark Bul. No: 1/10b Pendik / İstanbul
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    Eski Adres: mahalle • Yeni Adres: Yeni Adres
+                </p>
+                
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 6px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <span class="ilan-type-badge">Mal Varlığı Devri</span>
+                            <span class="meta-tag">T.C. Ankara Ticaret Sicili Müdürlüğü</span>
+                            <span class="date">30.10.2024</span>
+                        </div>
+                        <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">Aselsan Savunma Sistemleri A.Ş.</h3>
+                        
+                        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px;">
+                            <strong>Ticaret Sicil No:</strong> 789012
+                        </div>
+                        
+                        
+                    </div>
+                    <div style="text-align: right; font-size: 0.7rem; color: #94a3b8; margin-left: 10px;">
+                        TSG-2024-002
+                    </div>
+                </div>
+                
+                <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
+                    <strong>Adres:</strong> Ankara Teknokent ODTÜ Kampüsü
+                </p>
+                
+                
+                <p style="color:#64748b; font-size:0.8rem; line-height:1.4; font-style:italic; margin-top:4px;">
+                    Eski Sermaye: 10.000.000 TL • Yeni Sermaye: 25.000.000 TL
+                </p>
+                
+            </div>
+        </div>
+        
+    
+
+    <!-- NEWS SECTION - THIRD -->
+    <div class="section-title" style="page-break-before: always;">
+        <span>📰 Piyasa Haberleri & Duyarlılık Analizi</span>
+    </div>
+
+    
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.sabah.com.tr</span>
+                        <span class="date" style="margin-left:8px;">02.12.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Savunma sanayiinin ilk 100 listesinde 5 Türk firması var</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    SIPRI'nin 2024 savunma sanayi 100 listesinde Baykar 73. sırada yer alıyor. Türk firmalarının toplam geliri geçen yıla göre %11 artarak 10,1 milyar dolara ulaştı.
+                </p>
+                <a href="https://www.sabah.com.tr/gundem/2025/12/02/savunma-sanayiinin-ilk-100-listesinde-5-turk-firmasi-var" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">25.11.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Savunma sanayisindeki başarı sağlık teknolojilerine ilham oluyor</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Selçuk Bayraktar, 11. Türk Tıp Dünyası Kurultayı'nda yerli solunum cihazı üretimi, e‑Nabız veri hazinesi ve yapay zekâ destekli sağlık çözümlerinin Türkiye için stratejik önemini vurguladı. Yerli şirketlerle kısa sürede seri üretime geçilen cihazların 30'dan fazla ülkeye ihraç edildiğini ve mühendis‑doktor iş birliğinin sağlıkta da savunma sanayisi gibi başarı getireceğini belirtti.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/savunma-sanayisindeki-basari-saglik-teknolojilerine-ilham-oluyor-43032213" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">04.10.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">KIZILELMA, AB kalkışlı testi başarıyla geçti</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar'ın KIZILELMA projesinin üçüncü prototipi PT-5, AB kalkışlı aerodinamik sistem tanımlama testini başarıyla tamamladı ve uçuş testi Bayraktar AKINCI ile izlendi.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/kizilelma-ab-kalkisli-testi-basariyla-gecti-42972357" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">18.09.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Savunma ihracatında hedef ilk 10: Türkiye'nin tek rakibi kaldı! Dünya basınından dikkat çeken analiz: 'Geride bırakabilir'</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Türkiye, Baykar'ın TB2 ve Akıncı gibi İHA'ları ve KAAN savaş uçağı sayesinde savunma ihracatında hızlı bir büyüme kaydediyor. Küresel savunma harcamalarının artışı ve jeopolitik gerilimler, ülkenin ilk 10 savunma ihracatçısı arasına girmesine fırsat sunuyor. Baykar 2023'te ihracatını 1,8 milyar dolara çıkararak gelirinin %90'ını yurt dışından elde etti.
+                </p>
+                <a href="https://www.hurriyet.com.tr/dunya/savunma-ihracatinda-hedef-ilk-10-turkiyenin-tek-rakibi-kaldi-dunya-basinindan-dikkat-ceken-analiz-geride-birakabilir-42952547" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">m.sabah.com.tr</span>
+                        <span class="date" style="margin-left:8px;">06.09.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Selçuk Bayraktar: Türkiye artık savunma sanayinin her alanında varlık göstermeye başladı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    TEKNOFEST 2025 Nükleer Enerji Teknolojileri Tasarım Yarışması'nda 85 takım başvurdu, 26'sı final sunumuna katıldı ve 4 takım ödül töreninde Cumhurbaşkanı Erdoğan'dan ödül alacak. Selçuk Bayraktar, Türkiye'nin nükleer ve savunma sanayindeki bağımsızlık hedeflerini vurgularken, Baykar'ın SİHA pazarındaki %60 payını öne çıkardı.
+                </p>
+                <a href="https://m.sabah.com.tr/ekonomi/selcuk-bayraktar-turkiye-artik-savunma-sanayinin-her-alaninda-varlik-gostermeye-basladi-7419344" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">28.08.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">İtalyan basını TB3 Bayraktar'ın gelişini böyle duyurdu: Dronların Ferrari'si</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Panorama, Leonardo ile Baykar arasındaki 50/50 ortaklığının savunma sektöründe stratejik bir adım olduğunu vurguladı ve TB3 gibi yeni insansız hava araçlarının üretim ve montajının İtalya’da başlayacağını duyurdu. Ortaklık, yapay zeka ve İtalyan teknolojileriyle entegrasyon, Avrupa pazarında 100 milyar dolarlık potansiyel ve sivil kurtarma görevlerine katkı gibi olumlu beklentileri içeriyor.
+                </p>
+                <a href="https://www.hurriyet.com.tr/dunya/italyan-basini-tb3-bayraktarin-gelisini-boyle-duyurdu-dronlarin-ferrarisi-42928819" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.aa.com.tr</span>
+                        <span class="date" style="margin-left:8px;">27.07.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar Yönetim Kurulu Başkanı Bayraktar, TercihFest 2025'te üniversite adaylarıyla buluştu</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar Yönetim Kurulu Başkanı Selçuk Bayraktar, TercihFest 2025'te üniversite adaylarıyla bir araya gelerek şirketin savunma ve havacılık alanındaki başarılarını, 7.500 kişilik ekibi ve 37 ülkeye ihracatını anlattı. Kızıl Elma insansız savaş uçağı, uzay fırlatma araçları ve sosyal sorumluluk projeleriyle gençleri geleceğin inşasına davet etti.
+                </p>
+                <a href="https://www.aa.com.tr/tr/gundem/baykar-yonetim-kurulu-baskani-bayraktar-tercihfest-2025te-universite-adaylariyla-bulustu/3643556" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">26.07.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">'Gökyüzünün Ferrari'si' Avanti EVO uçağı IDEF'te! Pilottan Baykar sözleri...</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    IDEF 2025 fuarında Baykar'ın Piaggio Aerospace'i satın alması, test pilotu Lorenzo Villi tarafından büyük bir heyecan ve yenilikçi sinerji beklentisiyle karşılandı. Villi, bu birleşmenin şirket ve sektöre uzun vadeli yatırımlar ve yeni fırsatlar getireceğini vurguladı.
+                </p>
+                <a href="https://www.hurriyet.com.tr/video/gokyuzunun-ferrarisi-avanti-evo-ucagi-idefte-pilottan-baykar-sozleri-42893116" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">06.03.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">İtalya Savunma Bakanı Crosetto'dan Baykar-Leonardo ortaklığı açıklaması: Anlaşmadan büyük memnuniyet duyuyorum</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    İtalya Savunma Bakanı Crosetto, Leonardo ve Baykar arasında Roma'da imzalanan ortaklık anlaşmasını memnuniyetle karşıladığını belirtti. Anlaşmanın iki ülke arasındaki ilişkileri güçlendireceği ve uluslararası savunma ve teknoloji işbirliğine önemli bir katkı sağlayacağı vurgulandı.
+                </p>
+                <a href="https://www.hurriyet.com.tr/dunya/italya-savunma-bakani-crosettodan-baykar-leonardo-ortakligi-aciklamasi-anlasmadan-buyuk-memnuniyet-duyuyorum-42719407" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">25.02.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">İtalyan şirket açıkladı: Süreç hızlı ilerleyecek</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Leonardo'nun başkanı Stefano Pontecorvo, Baykar ile işbirliği sürecinin hızlı ilerleyeceğini ve Baykar'ı dünya birincisi olarak nitelendirerek ortaklık potansiyelini övdü. İki şirketin teknolojik tamamlayıcılığı sayesinde insansız sistemlerde büyük bir sıçrama ve yeni pazarlar açılabileceği vurgulandı.
+                </p>
+                <a href="https://www.hurriyet.com.tr/dunya/italyan-sirket-acikladi-surec-hizli-ilerleyecek-42707918" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">18.02.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">İtalya İşletmeler ve Made in Italy Bakanı Urso'dan Baykar'a ziyaret</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar Yönetim Kurulu Başkanı Selçuk Bayraktar, İtalyan yetkilileri Adolfo Urso ve Leonardo S.p.A. Başkanı Stefano Pontecorvo'nun fabrikayı ziyaret etmesinden memnuniyet duyduklarını belirtti. Ziyaret, Baykar’ın Piaggio Aerospace'i satın almasıyla iki ülke arasındaki havacılık‑savunma işbirliğini güçlendirecek ve yeni ortaklık fırsatları yaratacak olarak değerlendirildi.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/italya-isletmeler-ve-made-in-italy-bakani-ursodan-baykara-ziyaret-42699375" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">14.02.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Selçuk Bayraktar Piaggio Aerospace'in P180 uçağını kullandı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, Piaggio P180'nin ikinci pilot koltuğunda yer alarak İtalya'da ilk inişini gerçekleştirdi ve ihaleyi kazanarak Piaggio Aerospace'in satışını elde etti. Şirket, Selçuk ve Haluk Bayraktar'ın katılımıyla Piaggio tesislerinde işbirliği anlaşması imzalayarak ortak vizyonlarını güçlendirdiklerini duyurdu.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/selcuk-bayraktar-piaggio-aerospacein-p180-ucagini-kullandi-42695021" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.aa.com.tr</span>
+                        <span class="date" style="margin-left:8px;">14.02.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar Yönetim Kurulu Başkanı Bayraktar, Piaggio P180'nin pilot koltuğunda</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, Piaggio Aerospace'in P180 uçağı için düzenlenen ihaleyi kazanarak İtalyan havacılık deviyle iş birliği yaptı ve Bayraktar, Piaggio'nun fabrikasında ikinci pilot koltuğunda uçağı kontrol etti. Bu başarı, Baykar'ın uluslararası savunma ve havacılık sektöründeki konumunu güçlendirdi.
+                </p>
+                <a href="https://www.aa.com.tr/tr/savunma-sanayisi/baykar-yonetim-kurulu-baskani-bayraktar-piaggio-p180nin-pilot-koltugunda/3482690" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">01.02.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar, 2024’te 1.8 milyar dolarlık ihracat gerçekleştirdi</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, 2024 yılında 1,8 milyar dolarlık ihracat gerçekleştirerek dünya insansız hava aracı pazarının liderliğini sürdürdü ve gelirlerinin %90'ını bu alandan elde etti. Bayraktar TB2 ve AKINCI platformları 35 farklı ülkeye satıldı, NATO ve AB ülkelerindeki varlığı güçlendi.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/baykar-2024te-1-8-milyar-dolarlik-ihracat-gerceklestirdi-42678437" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">14.01.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Fergani Uzay'ın ilk uydusu uzaya fırlatıldı! İşte o anlar... Bakan Kacır'dan açıklama</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Fergani Uzay'ın milli olarak geliştirdiği FGN-100-d1 uydusu, 14 Ocak 2025'te Vandenberg Uzay Kuvvetleri Üssü'nden başarıyla fırlatıldı ve yörüngeye oturdu. Uydunun konumlandırma ve haberleşme görevleri için ilk manevraları tamamladığı ve Türkiye'nin uzay ekosisteminin büyümesine katkı sağladığı vurgulandı.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/baykar-ilk-uydusunu-uzaya-firlatti-42659092" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">07.01.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Bayraktar TB2 bir testi daha başarıyla tamamladı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, Bayraktar TB2'nin ANTIDOT-2U/S Elektronik Destek Podu ile yaptığı uçuş testini başarıyla tamamladığını duyurdu. Şirket, ihracat gelirlerinin büyük bir kısmını oluşturan ve savunma‑havacılık sektöründe lider konumda olduğunu da vurguladı.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/bayraktar-tb2-bir-testi-daha-basariyla-tamamladi-42651463" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">29.12.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Uzmanlar dev satın almayı Hürriyet’e yorumladı... Airbus da böyle başladı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, Piaggio Aerospace'i satın alarak İtalya'da köklü bir havacılık firmasını devraldı ve bu hamle hem şirketin vizyonunu hem de istihdamı artırmayı hedefliyor. Uzmanlar ve İtalyan basını, Baykar'ın bu kararını teknoloji, motor üretimi ve ihracat başarısı açısından çok akıllıca ve dönüm noktası olarak niteliyor.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/uzmanlar-dev-satin-almayi-hurriyete-yorumladi-airbus-da-boyle-basladi-42641600" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">27.12.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar, İtalyan havacılık şirketi Piaggio Aerospace’i satın alıyor</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, İtalyan havacılık firması Piaggio Aerospace'i satın alarak Avrupa pazarındaki etkisini artırıyor ve şirketin 140 yıllık mirasını koruyarak üretim kapasitesini güçlendirecek. Bu anlaşma, Baykar'ın küresel başarılarını pekiştirirken Türkiye-İtalya ekonomik ilişkilerini de destekleyecek.
+                </p>
+                <a href="https://www.hurriyet.com.tr/video/baykar-italyan-havacilik-sirketi-piaggio-aerospacei-satin-aliyor-42640402" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">22.11.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Bayraktar TB2'ye hayran kaldılar: Hırvat basını övgüyle bahsetti... 'Geleceğin yetenekli ve yüksek kalitedeki sistemleri'</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Hırvatistan Savunma Bakanlığı, Baykar ile anlaşma imzalayarak Bayraktar TB2 SİHA'larını envanterine kattı. Anlaşma kapsamında 67 milyon Euro karşılığında dronlar Hırvat ordusunun hizmetine girecek ve bölgedeki güvenlik ve göç kontrolüne katkı sağlayacak. Medya, bu alımı Hırvatistan için büyük bir başarı ve bölgesel istikrar için önemli bir adım olarak değerlendirdi.
+                </p>
+                <a href="https://www.hurriyet.com.tr/dunya/bayraktar-tb3e-hayran-kaldilar-hirvat-basini-ovguyle-bahsetti-gelecegin-yetenekli-ve-yuksek-kalitedeki-sistemleri-42600637" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">19.11.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Bayraktar TB3 tarihe geçti! Kısa pistli gemiden iniş kalkış yapmayı başaran ilk İHA oldu</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar tarafından üretilen Bayraktar TB3, kısa pistli bir gemiden iniş ve kalkış yapan ilk SİHA olarak tarihe geçti. TCG Anadolu'da gerçekleştirilen testler başarılı oldu ve gece‑gündüz yaklaşma testleri sorunsuz tamamlandı.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/bayraktar-tb3-tarihe-gecti-kisa-pistli-gemiden-inis-kalkis-yapmayi-basaran-ilk-iha-oldu-42597654" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">25.10.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Selçuk Bayraktar: Son nefesimize kadar mücadelemizi sürdüreceğiz</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (86.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Selçuk Bayraktar, SAHA Expo'da yaptığı konuşmada, ülkenin bağımsız savunma sanayii hedeflerini vurgulayarak, terör saldırılarına rağmen mücadelelerinin devam edeceğini ve Türkiye'nin dünya çapında iz bırakacak ürünler üreteceğini belirtti.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/selcuk-bayraktar-son-nefesimize-kadar-mucadelemizi-surdurecegiz-42571561" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">18.10.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Cumhurbaşkanı Erdoğan, Özdemir Bayraktar'ı andı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Cumhurbaşkanı Erdoğan, sosyal medya üzerinden Özdemir Bayraktar'ı büyük ve güçlü Türkiye ideali için gösterdiği özverili mücadele ve milli teknoloji hamlesine katkılarından dolayı rahmet ve saygıyla anıyor. Bayraktar'ın ölüm yıldönümünde ona cennet dileklerini iletiyor.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/cumhurbaskani-erdogan-ozdemir-bayraktari-andi-42565840" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">09.10.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Selçuk Bayraktar'a Kırgızistan'dan 'Dank Devlet Nişanı'</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar Yönetim Kurulu Başkanı Selçuk Bayraktar, Kırgızistan’ın başkenti Bişkek’te düzenlenen Türk Devletleri Yapay Zekâ Forumu’na onur konuğu olarak katıldı ve Kırgızistan Dank Devlet Nişanı ile taltif edildi. Görüşmelerde iki ülke arasındaki savunma ve teknoloji iş birliğinin derinleştirilmesi ve Baykar Teknoloji’nin Kırgız savunma sanayisine katkıları vurgulandı.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/selcuk-bayraktara-kirgizistandan-dank-devlet-nisani-42557866" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">29.09.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Haluk Bayraktar'dan 'sosyal medya operasyonu' tepkisi: Milli kazanımlarımızı kurban ettirmeyeceğiz</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (94.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Bayraktar, Baykar'la ilgili sosyal medyada çıkan iddialara yanıt vererek, geçmişte İsrail'den alınan Heron insansız hava araçlarının yüksek maliyetli ve sorunlu olduğunu hatırlattı. Ancak son 20 yılda Türkiye'nin yerli SİHA üretiminde devrim niteliğinde adımlar attığını ve dünya pazarında lider konuma geldiğini vurguladı. Bu başarının Azerbaycan'daki ADEX fuarında da gösterildiğini belirtti.
+                </p>
+                <a href="https://www.hurriyet.com.tr/ekonomi/haluk-bayraktardan-sosyal-medya-operasyonu-tepkisi-milli-kazanimlarimizi-kurban-ettirmeyecegiz-42547696" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">29.09.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Savunma Sanayii Başkanı Görgün'den Baykar'a ilişkin iddialara tepki: Bu tür provokasyonlar, itibarsızlaştırma çabalarının bir parçasıdır</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Görgün, Baykar'ın uluslararası fuarda sponsorluk yapması nedeniyle ortaya atılan asılsız İsrail işbirliği iddialarını reddederek, Türkiye'nin savunma sanayisinin 185 ülkeye 230’dan fazla ürün sağladığını ve ADEX 2024’teki güçlü katılımını vurguladı. Ayrıca Azerbaycan ile artan işbirliğini ve savunma alanındaki ortak projeleri öne çıkararak, provokatif saldırıların milli hedefleri sarsmayacağını belirtti.
+                </p>
+                <a href="https://www.hurriyet.com.tr/ekonomi/savunma-sanayii-baskani-gorgunden-baykara-iliskin-iddialara-tepki-bu-tur-provokasyonlar-itibarsizlastirma-cabalarinin-bir-parcasidir-42547675" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">25.09.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">KIZILELMA'nın üçüncü prototipinin ilk uçuşu başarılı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Türkiye'nin ilk insansız savaş uçağı Bayraktar KIZILELMA'nın üretim prototipi TC-ÖZB3, ilk uçuş testini başarıyla tamamladı. Baykar Yönetim Kurulu Başkanı Selçuk Bayraktar, testin sorunsuz geçtiğini ve ilerleyen aşamalarda daha fazla deneme yapılacağını belirtti.
+                </p>
+                <a href="https://www.hurriyet.com.tr/ekonomi/kizilelmanin-ucuncu-prototipinin-ilk-ucusu-basarili-42543521" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.hurriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">15.09.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Bayraktar TB3 SİHA'nın TCG Anadolu gemisinde testlerine başlanacak</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Bayraktar, TEKNOFEST 2024'teki başarıları ve gençlerin uzay, savunma ve teknoloji alanlarındaki yükselişini övgüyle dile getirdi. Baykar'ın Bayraktar TB3 ve KızılElma projelerinin üretim ve test aşamalarına yaklaştığını ve ülkenin milli teknoloji hamlesine katkı sağladığını vurguladı.
+                </p>
+                <a href="https://www.hurriyet.com.tr/gundem/bayraktar-tb3-sihanin-tcg-anadolu-gemisinde-testlerine-baslanacak-42532044" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.cnnturk.com</span>
+                        <span class="date" style="margin-left:8px;">30.06.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar ihracatın zirvesine demir attı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (98.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, 2024 yılında da savunma ve havacılık sektöründe ihracat lideri konumunu koruyarak Türkiye'nin en çok mal ihracatı yapan ilk 10 firmasından biri oldu ve Cumhurbaşkanı Erdoğan'dan ödül aldı. Şirket, Bayraktar TB2 ve AKINCI TİHA için toplam 36 ülke ile ihracat anlaşması imzalayarak küresel SİHA pazarında liderliğini pekiştirdi.
+                </p>
+                <a href="https://www.cnnturk.com/turkiye/baykar-ihracatin-zirvesine-demir-atti-2304392" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.samanyoluhaber.com</span>
+                        <span class="date" style="margin-left:8px;">01.12.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Damata kötü haber: Sadece Baykar'ın İHA'larına talep düştü</h3>
+                    </div>
+                    <span class="badge badge-negative">
+                        negative (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    SIPRI raporuna göre, geçen yıl Baykar, gelirleri azalan tek Türk savunma şirketi oldu. Şirketin geliri %12 düşerek 2 milyar doların altına geriledi ve satışlarındaki azalma, Ukrayna'daki TB‑2 talebinin düşmesiyle ilişkilendirildi. Diğer dört Türk firma ise gelirlerini artırdı.
+                </p>
+                <a href="https://www.samanyoluhaber.com/damata-kotu-haber-sadece-baykarin-ihalarina-talep-dustu-haberi/1483408/" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.msn.com</span>
+                        <span class="date" style="margin-left:8px;">01.12.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Türk savunma şirketleri yükselişte! ASELSAN, Baykar, TUSAŞ dünya devleri listesinde</h3>
+                    </div>
+                    <span class="badge badge-neutral">
+                        neutral (99.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Verilen metin Baykar ile ilgili bir haber içermemektedir; bunun yerine bir web sitesinin çerez ve izleme politikası açıklaması yer almaktadır. Bu nedenle istenen duygu analizi ve özetleme yapılamamaktadır.
+                </p>
+                <a href="https://www.msn.com/tr-tr/haber/bilim-ve-teknoloji/siprinın-ilk-100-savunma-sanayisi-şirketi-listesinde-5-türk-firması-yer-aldı/ar-AA1RtNv4" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">ekonomi.haber7.com</span>
+                        <span class="date" style="margin-left:8px;">20.08.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar'ın milli SİHA ihracatı, vergi ödemede zirveyi getirdi</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (96.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Gelir İdaresi Başkanlığı, Baykar yöneticileri Selçuk ve Haluk Bayraktar'ın 2024 yılında 5,3 milyar TL'yi aşan gelir vergisi ödediklerini ve şirketin ihracat gelirlerinin %90'ına ulaştığını duyurdu. Baykar, devlet desteği almadan AR‑GE ve üretimini finanse ederek, savunma sektöründe dünyanın en büyük SİHA üreticisi ve Türkiye'nin en çok ihracat yapan firmalarından biri konumunda.
+                </p>
+                <a href="https://ekonomi.haber7.com/ekonomi/haber/3556705-baykarin-milli-siha-ihracati-vergi-odemede-zirveyi-getirdi" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.trthaber.com</span>
+                        <span class="date" style="margin-left:8px;">30.06.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar'ın, Piaggio Aerospace'i satın alma süreci tamamlandı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, Piaggio Aerospace'in 140 yıllık mirasını devralarak İtalya'da imza töreniyle satın alma sürecini tamamladı. Şirket, sivil havacılık kapasitesini artırmayı, P.180 Avanti EVO üretimini yükseltmeyi ve Avrupa'da bakım merkezleri kurarak iki ülke arasındaki sanayi iş birliğini derinleştirmeyi hedefliyor.
+                </p>
+                <a href="https://www.trthaber.com/haber/savunma/baykarin-piaggio-aerospacei-satin-alma-sureci-tamamlandi-912434.html" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.posta.com.tr</span>
+                        <span class="date" style="margin-left:8px;">01.07.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar, Piaggio Aerospace'i resmen satın aldı</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, 140 yıllık İtalyan havacılık şirketi Piaggio Aerospace'i satın alarak süreci tamamladı. İtalyan yetkililer ve Baykar yöneticileri, bu alımın şirketin mirasını koruyup yenilikçi yatırımlarla yeniden canlandıracağını ve iki ülke arasındaki sanayi işbirliğini güçlendireceğini vurguladı.
+                </p>
+                <a href="https://www.posta.com.tr/ekonomi/baykar-piaggio-aerospacei-resmen-satin-aldi-2880104" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">t24.com.tr</span>
+                        <span class="date" style="margin-left:8px;">01.12.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">SIPRI raporunda Türkiye: Baykar'ın İHA'larına talep düştü</h3>
+                    </div>
+                    <span class="badge badge-negative">
+                        negative (93.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    SIPRI raporuna göre, 2024'te beş Türk savunma şirketi listede yer alırken, sadece Baykar gelirlerinde düşüş yaşadı. Şirketin satışları %12 azalarak 2 milyar doların altına geriledi ve bu, geçen yılki hızlı büyümenin ardından gerçekleşti. Diğer Türk firmalar ise gelir artışı gösterdi.
+                </p>
+                <a href="https://t24.com.tr/haber/sipri-raporunda-turkiye-baykar-in-iha-larina-talep-dustu,1280294" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.dha.com.tr</span>
+                        <span class="date" style="margin-left:8px;">30.06.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar, TİM'in "İhracatın Şampiyonları" sıralamasında ilk 10 firmadan biri oldu</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, son dört yılda savunma ve havacılık sektöründe ihracat lideri olarak Türkiye'nin en çok mal ihracatı yapan ilk 10 firmasından biri oldu ve 2024'te 1,8 milyar dolar ihracat gerçekleştirerek küresel SİHA pazarında lider konumunu korudu.
+                </p>
+                <a href="https://www.dha.com.tr/gundem/baykar-timin-ihracatin-sampiyonlari-siralamasinda-ilk-10-firmadan-biri-oldu-2669252" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.trthaber.com</span>
+                        <span class="date" style="margin-left:8px;">08.08.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar, Anadolu'daki ilk üretim üssünü Samsun'da kuracak</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, Samsun Tekkeköy'de 400 dönümlük yeni bir üretim üssü kurarak yüksek teknoloji üretimi ve nitelikli istihdam sağlayacak. Şirket, 2023 ve 2024 yıllarında toplam 1,8 milyar dolar ihracat yaparak savunma‑havacılık sektörünün lideri konumunu pekiştirdi ve yerel yetkililer bu yatırımı milli teknoloji hamlesi ve Samsun'un gelişimi açısından önemli buldu.
+                </p>
+                <a href="https://www.trthaber.com/haber/savunma/baykar-anadoludaki-ilk-uretim-ussunu-samsunda-kuracak-916396.html" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.posta.com.tr</span>
+                        <span class="date" style="margin-left:8px;">13.12.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Savunmadan uzaya: Baykar'ın büyük teknoloji vizyonu</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    İstanbul Fuar Merkezi'nde düzenlenen Take Off Girişim Zirvesi, katılımcı ve ziyaretçi sayısı bakımından büyük bir başarı elde etti ve kadın girişimcilerin öne çıkmasıyla dikkat çekti. Zirvede Baykar Yönetim Kurulu Başkanı Selçuk Bayraktar, savunma sanayisindeki çığır açan başarılarını ve gelecekteki teknoloji vizyonunu anlatarak, TB2, AKINCI TİHA, KIZILELMA gibi yeni nesil platformlarla ekosistem oluşturma hedefini vurguladı.
+                </p>
+                <a href="https://www.posta.com.tr/yazarlar/hakan-celik/savunmadan-uzaya-baykarin-buyuk-teknoloji-vizyonu-2943703" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.msn.com</span>
+                        <span class="date" style="margin-left:8px;">11.12.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Selçuk Bayraktar, Take Off İstanbul'da konuştu Açıklaması</h3>
+                    </div>
+                    <span class="badge badge-neutral">
+                        neutral (50.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    API analysis failed.
+                </p>
+                <a href="https://www.msn.com/tr-tr/haber/gundem/bayraktar-teknofest-bu-yıl-şanlıurfada-yapılacak/ar-AA1SaCga" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.msn.com</span>
+                        <span class="date" style="margin-left:8px;">04.12.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Mavi Vatan'da güç gösterisi</h3>
+                    </div>
+                    <span class="badge badge-neutral">
+                        neutral (97.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Metin, web sitelerinde kullanılan tanımlama bilgileri ve çerezlerin amaçlarını, veri toplama süreçlerini ve kullanıcı deneyimini iyileştirme, güvenlik, ölçüm gibi işlevlerini açıklamaktadır.
+                </p>
+                <a href="https://www.msn.com/tr-tr/haber/other/mavi-vatan-da-güç-gösterisi/ar-AA1RIhk3" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.tamindir.com</span>
+                        <span class="date" style="margin-left:8px;">28.09.2025</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Şok Açıklama: Amerika'da Baykar Fabrikası Mı Kurulacak?</h3>
+                    </div>
+                    <span class="badge badge-positive">
+                        positive (78.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    ABD, Baykar’dan kendi topraklarında bir üretim tesisi kurmasını talep ediyor. Bu talep, Baykar’ın Bayraktar TB2, Akıncı ve Kızılelma gibi projeleriyle uluslararası alanda kazandığı başarıların bir yansıması olarak görülüyor ve Türkiye’nin savunma sanayii konumunu güçlendirebilir.
+                </p>
+                <a href="https://www.tamindir.com/haber/abd-baykar-fabrikasi-kurulmasi-istiyor_100179/" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-content">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="meta-tag">www.cumhuriyet.com.tr</span>
+                        <span class="date" style="margin-left:8px;">27.10.2024</span>
+                        <h3 style="margin: 8px 0; font-size:1.1rem;">Baykar'dan 'sahte reklam' açıklaması</h3>
+                    </div>
+                    <span class="badge badge-neutral">
+                        neutral (86.0%)
+                    </span>
+                </div>
+                <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
+                    Baykar, yapay zeka kullanılarak oluşturulan sahte yatırım fırsatlarıyla adının kötüye kullanıldığını ve bu içeriklerin dolandırıcılık amaçlı olduğunu açıkladı. Şirket, resmi açıklamaların yalnızca kendi sosyal medya ve web sitesinde yapılacağını ve sahte içeriklere karşı hukuki işlem başlatıldığını duyurdu.
+                </p>
+                <a href="https://www.cumhuriyet.com.tr/turkiye/baykardan-sahte-reklam-aciklamasi-2262316" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+            </div>
+        </div>
+        
+    
+
+</body>
+</html>
