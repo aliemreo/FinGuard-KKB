@@ -1,0 +1,39 @@
+[
+    {
+        "ilan_no": "TSG-2024-123456",
+        "ilan_turu": 4,
+        "ticaret_sicil_no": "123456",
+        "mersis_no": "0463000447800017",
+        "unvan": "Aselsan Elektronik Sanayi ve Ticaret A.Ş.",
+        "sirket_sorgusu": "Aselsan",
+        "il": 34,
+        "adres": "Sanayi Mah. Teknopark Bul. No: 1/10b Pendik / İstanbul",
+        "tescil_tarihi": "2024-10-30",
+        "gazete_tarihi": "2024-10-30",
+        "gazete_sayisi": "11196",
+        "detaylar": {
+            "old_address": "ESKİ ADRES",
+            "new_address": "Sanayi Mah. Teknopark Bul. No: 1/10b Pendik / İstanbul",
+            "registered_matters": [
+                "Şirketin Merkezi"
+            ]
+        }
+    },
+    {
+        "ilan_no": "TSG-2024-123457",
+        "ilan_turu": 3,
+        "ticaret_sicil_no": "789012",
+        "mersis_no": "0948028286200010",
+        "unvan": "Aselsan Savunma A.Ş.",
+        "sirket_sorgusu": "Aselsan",
+        "il": 6,
+        "adres": "Ankara Teknokent No: 5",
+        "tescil_tarihi": "2024-10-30",
+        "gazete_tarihi": "2024-10-30",
+        "gazete_sayisi": "11196",
+        "detaylar": {
+            "old_capital": "10.000.000 TL",
+            "new_capital": "25.000.000 TL"
+        }
+    }
+]
