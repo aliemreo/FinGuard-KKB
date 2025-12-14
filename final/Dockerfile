@@ -6,12 +6,16 @@ USER root
 # 3. Çalışma Dizini
 WORKDIR /workspace
 
-# 4. Sistem Kütüphaneleri (Tesseract, Poppler, OpenCV, Postgres Driver)
+# 4. Sistem Kütüphaneleri (Tesseract, Poppler, OpenCV, Postgres Driver, wkhtmltopdf)
 # "rm -rf" kısmı imajı temiz tutar.
 RUN apt-get update && apt-get install -y \
     poppler-utils \
     tesseract-ocr \
     tesseract-ocr-tur \
+    wkhtmltopdf \
+    libxrender1 \
+    libfontconfig1 \
+    libxext6 \
     libgl1 \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*

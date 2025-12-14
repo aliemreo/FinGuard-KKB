@@ -10,6 +10,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/database_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      # Friend's init.sql (loads after schema)
+      - ./final/init.sql:/docker-entrypoint-initdb.d/02_init.sql:ro
     ports:
       - "5435:5432"
     healthcheck:
@@ -24,7 +26,7 @@ services:
     image: dpage/pgadmin4:latest
     container_name: kkb_pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@kkb.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
     volumes:
@@ -35,6 +37,58 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+
+  # Friend's Python Application (ihale-app)
+  ihale-app:
+    build: ./final
+    image: ihale-projesi:v2
+    container_name: ihale_container_final
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # GPU Support (if available)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./final:/workspace
+    environment:
+      # Connect to the postgres service above
+      - DB_HOST=postgres
+      - DB_NAME=${POSTGRES_DB:-kkb_db}
+      - DB_USER=${POSTGRES_USER:-kkb_user}
+      - DB_PASS=${POSTGRES_PASSWORD:-kkb_password}
+
+  # News Scanning and Sentiment Analysis
+  news-scanner:
+    build: ./news_scanning_and_sentimental_analysis
+    image: news-scanner:latest
+    container_name: news_scanner_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./news_scanning_and_sentimental_analysis:/app
+      - ./report-ofe:/app/report-ofe
+    environment:
+      # OpenAI API
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE}
+      - OPENAI_MODEL=${OPENAI_MODEL}
+      # Database connection
+      - DB_HOST=postgres
+      - DB_NAME=${POSTGRES_DB:-kkb_db}
+      - DB_USER=${POSTGRES_USER:-kkb_user}
+      - DB_PASS=${POSTGRES_PASSWORD:-kkb_password}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-kkb_user}:${POSTGRES_PASSWORD:-kkb_password}@postgres:5432/${POSTGRES_DB:-kkb_db}
 
 volumes:
   postgres_data:
