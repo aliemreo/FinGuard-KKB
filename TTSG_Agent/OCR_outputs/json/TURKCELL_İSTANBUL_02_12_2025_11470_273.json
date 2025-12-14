@@ -2,12 +2,37 @@
   "gazette_metadata": {
     "date": "2 ARALIK 2025",
     "number": 11470,
-    "page": 1
+    "page": 273
   },
-  "announcements": [],
+  "announcements": [
+    {
+      "metadata": {
+        "registry_office": "İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0478018704800018",
+        "company_name": "TURKCELL TEKNOLOJİ ARAŞTIRMA VE GELİŞTİRME ANONİM ŞİRKETİ",
+        "announcement_number": "265612"
+      },
+      "announcement_type": "unknown",
+      "content": {
+        "registered_matters": "Denetçiler",
+        "registration_date": "2025-12-02",
+        "changes": [],
+        "old_address": null,
+        "new_address": null,
+        "old_capital": null,
+        "new_capital": null,
+        "capital_breakdown": null,
+        "shareholders": null,
+        "notary_info": "Beyoğlu 18. Noterliği, 16.10.2025 tarihli, 16057 sayılı belge"
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
   "extraction_stats": {
-    "total_announcements": 0,
-    "successful_extractions": 0,
+    "total_announcements": 1,
+    "successful_extractions": 1,
     "failed_extractions": 0,
     "fallback_extractions": 0
   },

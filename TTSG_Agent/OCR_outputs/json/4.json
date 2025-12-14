@@ -1,0 +1,44 @@
+{
+  "gazette_metadata": {
+    "date": "22 TEMMUZ 2025",
+    "number": 11376,
+    "page": 102
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0091041349100013",
+        "company_name": "ASELSANNET ELEKTRONİK VE HABERLEŞME SİSTEMLERİ SANAYİ TİCARET İNŞAAT VE TAAHHÜT LİMİTED ŞİRKETİ",
+        "announcement_number": "44915"
+      },
+      "announcement_type": "unknown",
+      "content": {
+        "registered_matters": "Müdürler / Yetkililer",
+        "registration_date": "2025-07-21",
+        "changes": [],
+        "old_address": null,
+        "new_address": null,
+        "old_capital": null,
+        "new_capital": null,
+        "capital_breakdown": null,
+        "shareholders": null,
+        "notary_info": "Ankara, Noter Nt Nin, 18.07.2025 tarih ve 5188 sayılı tasdikli belge; ayrıca 25.06.2025 tarihli 104 sayılı Genel Kurul Kararı."
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 1,
+    "successful_extractions": 1,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  },
+  "filter_settings": {
+    "company_filter": "ASELSAN",
+    "filter_method": "llm_semantic",
+    "filter_applied": true
+  }
+}

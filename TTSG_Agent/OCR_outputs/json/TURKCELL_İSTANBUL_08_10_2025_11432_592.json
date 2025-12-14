@@ -1,38 +1,30 @@
 {
   "gazette_metadata": {
-    "date": null,
+    "date": "8 EKİM 2025",
     "number": 11432,
-    "page": 1
+    "page": 592
   },
   "announcements": [
     {
       "metadata": {
-        "gazette_date": null,
-        "gazette_number": 11432,
         "registry_office": "İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
         "registry_number": "Unknown",
         "mersis_no": "0877001340600017",
         "company_name": "TURKCELL İLETİŞİM HİZMETLERİ ANONİM ŞİRKETİ",
-        "announcement_number": null
+        "announcement_number": "219929"
       },
-      "announcement_type": "bileşik_değişiklik",
+      "announcement_type": "unknown",
       "content": {
-        "registered_matters": [
-          "Yönetim Kurulu / Yetkililer",
-          "Görev dağılımındaki değişiklik"
-        ],
+        "registered_matters": "Yönetim Kurulu / Yetkililer",
         "registration_date": "2025-10-08",
-        "old_address": "Aydınevler Mah. İsmet İnönü Cad. Küçükyalı Ofis Park B Blok No: 20, Maltepe / İstanbul",
+        "changes": [],
+        "old_address": null,
         "new_address": null,
         "old_capital": null,
         "new_capital": null,
         "capital_breakdown": null,
         "shareholders": null,
-        "notary_info": {
-          "notary_office": "Beyoğlu 18. Noterliği",
-          "notary_date": "2025-10-03",
-          "notary_number": "15325"
-        }
+        "notary_info": "Beyoğlu 18. Noterliği, 03.10.2025 tarih, 15325 sayılı belge"
       },
       "raw_text": null,
       "extraction_success": true

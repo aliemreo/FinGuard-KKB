@@ -25,7 +25,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
 import argparse
-# from rapidfuzz import fuzz, process
+from rapidfuzz import fuzz, process
 
 # Load environment variables
 # Load environment variables from root
@@ -50,10 +50,8 @@ MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-oss-120b")
 # IMPORT MODELS FROM test_ollama.py
 # ============================================================================
 
-# Universal Metadata
+# Universal Metadata (per-announcement, not gazette-level)
 class UniversalMetadata(BaseModel):
-    gazette_date: Optional[str] = Field(default=None)
-    gazette_number: Optional[int] = Field(default=None)
     registry_office: str = Field(description="Trade Registry Office")
     registry_number: str = Field(description="Local registry number")
     mersis_no: str = Field(description="MERSİS number (16 digits)")
@@ -137,6 +135,7 @@ class DetectedAnnouncement(BaseModel):
     mersis_no: Optional[str] = None
     company_name: Optional[str] = None
     registry_office: Optional[str] = None
+    ilan_sira_no: Optional[str] = None
 
 class GazetteExtraction(BaseModel):
     gazette_metadata: dict
@@ -336,13 +335,65 @@ def normalize_announcement_type(detected_type: str) -> str:
 def split_gazette_into_sections(markdown_content: str) -> List[dict]:
     """Split gazette by announcement sections"""
     sections = []
-    pattern = r'(## T\.C\. .+? MÜDÜRLÜĞÜ.*?)(?=## T\.C\. |$)'
+    # Match headers with or without "T.C." prefix
+    # Examples: "## T.C. ANKARA TİCARET SİCİLİ" or "## ANKARA TİCARET SİCİLİ"
+    pattern = r'(## (?:T\.C\. )?.*?MÜDÜRLÜĞÜ.*?)(?=## (?:T\.C\. )?.*?MÜDÜRLÜĞÜ|$)'
     matches = re.findall(pattern, markdown_content, re.DOTALL)
 
     for idx, match in enumerate(matches):
         sections.append({'index': idx, 'text': match.strip()})
 
     return sections
+
+def find_relevant_sections(gazette_content, company_name, threshold=80):
+    """
+    Parses the gazette content, identifies sections, and finds ones relevant to the company name.
+    Also includes the gazette header for context.
+
+    Args:
+        gazette_content (str): The full string content of the markdown file.
+        company_name (str): The company name to search for.
+        threshold (int): The minimum fuzzy match confidence score (0-100) - used only for fallback.
+
+    Returns:
+        list[str]: A list of sections that match the company name.
+    """
+    # Split by registry office headers
+    # The pattern looks for a line starting with '##' and containing 'MÜDÜR' (with or without 'T.C.')
+    # Examples: "## T.C. ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ" or "## ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ"
+    sections = re.split(r'(?=^##.*MÜDÜR)', gazette_content, flags=re.MULTILINE)
+    
+    # Remove the first section (header part before registry offices)
+    if sections and not sections[0].strip().startswith('##'):
+        sections = sections[1:]
+    
+    relevant_sections = []
+    company_name_upper = company_name.upper().strip()
+
+    for section in sections:
+        if not section.strip():
+            continue
+
+        section_upper = section.upper()
+        
+        # PRIMARY: Direct string search (case-insensitive)
+        # This is the most reliable method
+        if company_name_upper in section_upper:
+            relevant_sections.append(section.strip())
+            continue
+        
+        # SECONDARY: Try partial matching for OCR errors (e.g., "TURCELL" vs "TURKCELL")
+        # Only if the company name is at least 5 chars to avoid false positives
+        if len(company_name_upper) >= 5:
+            # Use token_set_ratio which handles word order and partial matches
+            score = fuzz.token_set_ratio(company_name_upper, section_upper)
+            if score >= threshold:
+                # Additional check: verify at least part of the name appears
+                name_parts = company_name_upper.split()
+                if any(part in section_upper for part in name_parts if len(part) >= 4):
+                    relevant_sections.append(section.strip())
+            
+    return relevant_sections
 
 def pre_detect_compound_announcements(markdown_content: str) -> dict:
     """Programmatically detect compound announcements"""
@@ -376,83 +427,115 @@ def pre_detect_compound_announcements(markdown_content: str) -> dict:
 
     return compound_map
 
-def extract_gazette_metadata(markdown_content: str) -> dict:
-    """Extract gazette-level metadata"""
+def extract_gazette_metadata_llm(markdown_content: str, model=None) -> dict:
+    """Extract gazette-level metadata using LLM.
+    
+    This extracts date, number, and page from the gazette header using LLM
+    to handle OCR variations robustly.
+    """
+    if model is None:
+        model = MODEL_NAME
+    
     metadata = {'date': None, 'number': None, 'page': None}
 
-    number_match = re.search(r'SAYI[:\s]+(\d+)', markdown_content, re.IGNORECASE)
-    if number_match:
-        metadata['number'] = int(number_match.group(1))
+    # Only use the first part of the document (header area)
+    # Increased to 10000 to ensure we capture both left and right columns of first page
+    header_text = markdown_content[:10000]
+    
+    system_prompt = """You are an expert at extracting metadata from Turkish Trade Registry Gazettes.
+Extract the gazette publication metadata from the OCR text.
 
-    page_match = re.search(r'SAYFA[:\s]+(\d+)', markdown_content, re.IGNORECASE)
-    if page_match:
-        metadata['page'] = int(page_match.group(1))
+IMPORTANT: The gazette header is split across LEFT and RIGHT columns. You must search the ENTIRE text carefully.
 
-    date_patterns = [
-        r'(\d{1,2}\s+\w+\s+\d{4})',
-        r'(\d{1,2}\.\d{1,2}\.\d{4})',
-    ]
-    for pattern in date_patterns:
-        date_match = re.search(pattern, markdown_content[:500])
-        if date_match:
-            metadata['date'] = date_match.group(1)
-            break
+METADATA TO EXTRACT:
+1. gazette_date: Publication date in Turkish format with day, month name, and year
+   - Format: "DD MONTH_NAME YYYY" (e.g., "2 ARALIK 2025", "27 KASIM 2025", "7 EKİM 2025")
+   - Turkish months: OCAK, ŞUBAT, MART, NİSAN, MAYIS, HAZİRAN, TEMMUZ, AĞUSTOS, EYLÜL, EKİM, KASIM, ARALIK
+   - Usually appears near "SAYI:"
 
+2. gazette_number: The SAYI (gazette issue number)
+   - Look for "SAYI:" or "SAYI :" followed by 4-5 digits (e.g., 11470, 11452, 11431)
+   - Usually appears near the date
+
+3. gazette_page: The SAYFA (page number)
+   - Look for "SAYFA:" or "SAYFA ;" or "SAYFA :" followed by 1-4 digits (e.g., 273, 894, 1152)
+   - Can be separated from date and SAYI
+
+COMMON PATTERNS:
+- Left column: "2 ARALIK 2025 SAYI: 11470" | Right column: "SAYFA: 273"
+- Left column: "SAYFA ; 894" | Right column: "6 KASIM 2025 SAYI: 11452"
+- Single location: "SAYFA :386 TÜRKİYE TİCARET SİCİLİ GAZETESİ 7 EKİM 2025 SAYI: 11431"
+
+INSTRUCTIONS:
+- Search BOTH "LEFT COLUMN" and "RIGHT COLUMN" (marked as "=== RIGHT COLUMN ===")
+- Extract only the NUMERIC values for gazette_number and gazette_page (as integers)
+- Extract the FULL date string for gazette_date (with Turkish month name)
+- If you cannot find a field with certainty, use null for that field
+
+Return JSON with gazette_date (string), gazette_number (integer), and gazette_page (integer)."""
+
+    user_prompt = f"""Extract the gazette metadata from this text.
+Search carefully through the entire text - metadata may be split between left and right columns.
+
+Text:
+{header_text}
+
+Return JSON format:
+{{
+  "gazette_date": "DD MONTH_NAME YYYY",
+  "gazette_number": number,
+  "gazette_page": number
+}}"""
+
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': user_prompt}
+            ],
+            temperature=0.1,
+            max_tokens=300
+        )
+        
+        result_text = response.choices[0].message.content
+        print(f"    📝 LLM metadata response: {result_text[:200] if result_text else 'None'}...", flush=True)
+        if result_text:
+            # Extract JSON from response (may be wrapped in markdown code block)
+            if '```json' in result_text:
+                result_text = result_text.split('```json')[1].split('```')[0].strip()
+            elif '```' in result_text:
+                result_text = result_text.split('```')[1].split('```')[0].strip()
+            
+            result = json.loads(result_text)
+            metadata['date'] = result.get('gazette_date')
+            metadata['number'] = result.get('gazette_number')
+            metadata['page'] = result.get('gazette_page')
+    except Exception as e:
+        print(f"    ⚠ LLM metadata extraction failed: {e}")
+    
     return metadata
 
-def fuzzy_match_company(search_name: str, detected_announcements: List[DetectedAnnouncement], threshold: float = 75.0) -> List[DetectedAnnouncement]:
-    """
-    Filter announcements by company name using fuzzy matching.
 
-    Args:
-        search_name: Company name to search for (case-insensitive)
-        detected_announcements: List of detected announcements
-        threshold: Minimum similarity score (0-100), default 75.0
+# Keep the old regex version commented out for reference
+# def extract_gazette_metadata_regex(markdown_content: str) -> dict:
+#     """Extract gazette-level metadata using regex (legacy)"""
+#     metadata = {'date': None, 'number': None, 'page': None}
+#     number_match = re.search(r'SAYI[:\s]+(\d+)', markdown_content, re.IGNORECASE)
+#     if number_match:
+#         metadata['number'] = int(number_match.group(1))
+#     page_match = re.search(r'SAYFA\s*[:;]?\s*(\d{2,})', markdown_content, re.IGNORECASE)
+#     if page_match:
+#         metadata['page'] = int(page_match.group(1))
+#     turkish_months = r'(?:OCAK|ŞUBAT|MART|NİSAN|MAYIS|HAZİRAN|TEMMUZ|AĞUSTOS|EYLÜL|EKİM|KASIM|ARALIK)'
+#     date_patterns = [rf'(\d{{1,2}}\s+{turkish_months}\s+\d{{4}})', r'(\d{1,2}\.\d{1,2}\.\d{4})']
+#     for pattern in date_patterns:
+#         date_match = re.search(pattern, markdown_content[:2500], re.IGNORECASE)
+#         if date_match:
+#             metadata['date'] = date_match.group(1)
+#             break
+#     return metadata
 
-    Returns:
-        Filtered list of announcements matching the search name
-    """
-    if not search_name or not detected_announcements:
-        return detected_announcements
-
-    matched = []
-    search_normalized = search_name.upper().strip()
-
-    print(f"\n    🔍 Filtering by company name: '{search_name}'", flush=True)
-    print(f"    📊 Similarity threshold: {threshold}%", flush=True)
-
-    for detected in detected_announcements:
-        if not detected.company_name:
-            continue
-
-        company_normalized = detected.company_name.upper().strip()
-
-        # Try multiple fuzzy matching strategies
-        scores = {
-            'ratio': fuzz.ratio(search_normalized, company_normalized),
-            'partial_ratio': fuzz.partial_ratio(search_normalized, company_normalized),
-            'token_sort_ratio': fuzz.token_sort_ratio(search_normalized, company_normalized),
-            'token_set_ratio': fuzz.token_set_ratio(search_normalized, company_normalized),
-        }
-
-        # Use the best score from all strategies
-        best_score = max(scores.values())
-        best_method = max(scores, key=scores.get)
-
-        if best_score >= threshold:
-            matched.append(detected)
-            print(f"    ✓ MATCH: {detected.company_name[:50]}", flush=True)
-            print(f"      └─ Score: {best_score:.1f}% ({best_method})", flush=True)
-            if detected.mersis_no:
-                print(f"      └─ MERSİS: {detected.mersis_no}", flush=True)
-
-    if matched:
-        print(f"\n    ✅ Found {len(matched)} matching announcement(s)", flush=True)
-    else:
-        print(f"\n    ⚠ No matches found above {threshold}% threshold", flush=True)
-        print(f"    → Processing entire gazette normally", flush=True)
-
-    return matched if matched else detected_announcements
 
 def detect_announcement_types(gazette_content: str, model=None, company_filter: str = None) -> List[DetectedAnnouncement]:
     """Stage 1: Detect announcements using OpenAI-compatible API
@@ -482,17 +565,33 @@ Only detect and return announcements for companies whose name contains or matche
     print(f"    🤖 Calling LLM ({model}) for announcement detection...", flush=True)
     system_prompt = """You are a Turkish Trade Registry Gazette analyzer expert. Identify and classify announcements.
 
-Classify into ONE of these types:
-- "birleşme": Merger
-- "sermaye_azaltımı": Capital decrease
-- "tasfiye": Liquidation
-- "mal_varlığı_devri": Asset transfer
-- "şube_kuruluşu": Branch establishment
-- "adres_değişikliği": Address change ONLY
-- "bileşik_değişiklik": COMPOUND (multiple changes, look for COMMA in "Tescil Edilen Hususlar")
-- "toplantı_çağrısı": Meeting call
-- "pay_senedi_değişimi": Share exchange
-- "sermaye_taahhüdü": Capital commitment
+Classify into ONE of these PREDEFINED types:
+- "birleşme": Merger (look for "devir", "birleşme", "devralan", "devrolan")
+- "sermaye_azaltımı": Capital decrease (look for "sermaye azaltımı")
+- "tasfiye": Liquidation (look for "tasfiye")
+- "mal_varlığı_devri": Asset transfer (look for "mal varlığı devri")
+- "şube_kuruluşu": Branch establishment (look for "şube", "kuruluş")
+- "adres_değişikliği": Address change (look for "adres", "merkez değişikliği")
+- "toplantı_çağrısı": Meeting call (look for "toplantı çağrısı", "genel kurul")
+- "pay_senedi_değişimi": Share exchange (look for "pay senedi değişimi")
+- "sermaye_taahhüdü": Capital commitment (look for "sermaye taahhüdü")
+- "bileşik_değişiklik": COMPOUND - USE ONLY when announcement contains MORE THAN ONE of the above predefined types together (e.g., address change + capital change in same announcement). DO NOT use for single-type changes.
+- "unknown": Use when the announcement type is NOT in the predefined list above
+
+CRITICAL: "unknown" type includes (these are NOT compound):
+- "Yönetim Kurulu / Yetkililer" (board/management changes)
+- "Müdürler / Yetkililer" (manager/authority changes)
+- "Denetçiler" (auditor changes)
+- "İmza Yetkilisi" (signature authority changes)
+- "Temsil Yetkisi" (representation authority changes)
+- "Görev Dağılımındaki Değişiklik" (duty distribution changes)
+- Any personnel/people changes
+
+IMPORTANT RULES:
+1. "bileşik_değişiklik" means MULTIPLE predefined types in ONE announcement - NOT for single types
+2. "unknown" is for types NOT in predefined list - even if announcement has "/" or "ve" in the name
+3. Board/management/personnel changes are ALWAYS "unknown", NEVER "bileşik_değişiklik"
+4. You MUST return at least one announcement for each company section found
 
 Return ONLY valid JSON."""
 
@@ -504,6 +603,7 @@ Return JSON with "announcements" array:
 - mersis_no: MERSİS number (16 digits)
 - company_name: company name (full name from the gazette)
 - registry_office: registry office name
+- ilan_sira_no: İlan Sıra No (announcement serial number) - REQUIRED field, look for "İlan Sıra No:" or "Ilan Sıra No:"
 
 Document:
 {gazette_content[:64000]}
@@ -516,17 +616,20 @@ Return format:
       "announcement_type": "birleşme",
       "mersis_no": "0608176080400001",
       "company_name": "COMPANY NAME",
-      "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ"
+      "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+      "ilan_sira_no": "123456"
     }}
   ]
 }}
 
-IMPORTANT: Analyze the ENTIRE document. Don't miss announcements at the end."""
+IMPORTANT:
+1. Analyze the ENTIRE document. Don't miss announcements at the end.
+2. ALWAYS extract the İlan Sıra No field - it appears near the top of each announcement section."""
 
     try:
         import time
         max_retries = 2
-        retry_delay = 5  # seconds
+        retry_delay = 1  # seconds
 
         for attempt in range(max_retries):
             try:
@@ -615,12 +718,78 @@ Text: {section_text}
 Return JSON."""
         },
         "bileşik_değişiklik": {
-            "system": """Extract compound announcement with multiple changes.""",
-            "user": f"""Extract ALL fields: registered_matters, registration_date, old_address, new_address, old_capital, new_capital, capital_breakdown, shareholders, notary_info.
+            "system": """You are an expert in Turkish Trade Registry Gazettes. Extract ALL information from announcements.
+Return dynamic JSON with keys based on what is actually present. Do NOT include empty or null fields.
+Be thorough - extract every piece of useful information.""",
+            "user": f"""Extract ALL information from this Turkish Trade Registry announcement.
 
-Text: {section_text}
+REQUIRED FIELD (MUST BE FIRST):
+- changes_summary: Bu ilanın ne hakkında olduğunu özetleyen kısa bir açıklama IN TURKISH (1-2 cümle, TÜRKÇE YAZILMALI)
 
-Return JSON."""
+COMPANY INFO:
+- company_name: full company name
+- company_address: current address
+- mersis_no: MERSİS number
+- ticaret_sicil_no: Trade registry number
+- ilan_sira_no: Announcement number
+- registered_matters: what was registered (Tescil Edilen Hususlar)
+- registration_date: when registered
+- notary_info: notary details (look for "Noterliği", dates, numbers)
+
+PERSONNEL CHANGES (if any):
+- people_added: list of people added with {{name, role, authority_type}}
+- people_removed: list of people removed with {{name, previous_role}}
+
+ADDRESS CHANGES (if any):
+- old_address, new_address
+
+CAPITAL CHANGES (if any):
+- old_capital, new_capital, capital_breakdown
+
+SHAREHOLDERS (if any):
+- shareholders: list with {{name, share_quantity, share_amount}}
+
+GAZETTE METADATA (if visible in text):
+- gazette_date: gazette publication date (e.g., "7 EKİM 2025")
+- gazette_number: SAYI number (e.g., 11431)
+- gazette_page: SAYFA number (e.g., 386)
+
+Text:
+{section_text}
+
+IMPORTANT: Return JSON with changes_summary as the FIRST field (IN TURKISH), then include ONLY other fields that have actual values. Be comprehensive."""
+        },
+        "unknown": {
+            "system": """You are an expert in Turkish Trade Registry Gazettes. Extract ALL available information from this announcement.
+The announcement type is unknown or doesn't match standard categories (e.g., board changes, auditor changes, authority changes).
+CRITICAL: The changes_summary field is MANDATORY and must be written IN TURKISH.""",
+            "user": f"""Extract ALL information from this Turkish Trade Registry announcement.
+
+⚠️ CRITICAL - REQUIRED FIELD (MUST BE FIRST):
+- changes_summary: Bu ilanın ne hakkında olduğunu özetleyen kısa bir açıklama IN TURKISH (1-2 cümle, TÜRKÇE YAZILMALI)
+  Example: "Şirketin yönetim kurulu üyelerinde değişiklik yapılmıştır."
+  Example: "Şirketin denetçileri değişmiştir."
+
+REQUIRED FIELDS:
+- company_name: Full company name
+- mersis_no: MERSİS number if present
+- ticaret_sicil_no: Trade registry number if present
+- registration_date: When this was registered (format: YYYY-MM-DD or DD.MM.YYYY)
+- registered_matters: What was registered (Tescil Edilen Hususlar) - exact text from announcement
+
+OPTIONAL FIELDS (include if found):
+- company_address: Current address
+- ilan_sira_no: Announcement number
+- notary_info: Notary details (office, date, document number)
+- key_people: List of people mentioned with their roles and actions (added/removed/changed)
+- people_added: List of people added with {{name, role, details}}
+- people_removed: List of people removed with {{name, previous_role}}
+- additional_information: Any other relevant details
+
+Text:
+{section_text}
+
+⚠️ IMPORTANT: Return JSON with changes_summary as the VERY FIRST field (WRITTEN IN TURKISH), followed by other fields. The changes_summary field is MANDATORY and cannot be null or empty."""
         }
     }
 
@@ -648,12 +817,17 @@ def extract_announcement_fields(detected: DetectedAnnouncement, full_section: st
                 {'role': 'user', 'content': user_prompt}
             ],
             response_format={"type": "json_object"},
-            temperature=0.1,
+            temperature=0.2,
             max_tokens=3000
         )
 
         result_text = response.choices[0].message.content
         print(f" ✅")
+
+        # Handle None response from LLM
+        if result_text is None:
+            print(f"        ⚠ LLM returned None response")
+            return {}
 
         if '```json' in result_text:
             result_text = result_text.split('```json')[1].split('```')[0].strip()
@@ -679,7 +853,10 @@ def extract_generic_fallback(section_text: str, announcement_type: str, model=No
     system_prompt = """You are an expert in Turkish Trade Registry Gazettes.
 Your task is to extract ANY valuable information from this announcement, even if you don't know the exact announcement type.
 
+CRITICAL: You MUST include a changes_summary field IN TURKISH that describes what this announcement is about.
+
 Extract whatever you can find:
+- Summary of what changed (REQUIRED, IN TURKISH)
 - Company information (name, MERSİS number, address)
 - Dates (registration date, effective date, deadlines)
 - People (managers, representatives, shareholders)
@@ -694,9 +871,12 @@ Be thorough and extract everything that might be useful."""
 
 Please extract ALL valuable information you can find from this text.
 
+⚠️ REQUIRED FIRST FIELD:
+- changes_summary: Bu ilanın ne hakkında olduğunu özetleyen kısa bir açıklama IN TURKISH (1-2 cümle, TÜRKÇE YAZILMALI)
+
 Return JSON with fields like:
+- changes_summary: REQUIRED - brief description IN TURKISH
 - announcement_type: "{announcement_type}"
-- summary: brief description of what this announcement is about
 - company_info: {{name, mersis_no, address, etc}}
 - key_dates: {{registration_date, effective_date, etc}}
 - key_people: [list of people mentioned with roles]
@@ -707,9 +887,9 @@ Return JSON with fields like:
 - raw_key_phrases: [important Turkish phrases that might help identify type]
 
 Text:
-{section_text[:4000]}
+{section_text[:8000]}
 
-Return comprehensive JSON with ALL information found."""
+⚠️ IMPORTANT: Return comprehensive JSON starting with changes_summary field IN TURKISH, then include ALL other information found."""
 
     try:
         response = client.chat.completions.create(
@@ -719,7 +899,7 @@ Return comprehensive JSON with ALL information found."""
                 {'role': 'user', 'content': user_prompt}
             ],
             response_format={"type": "json_object"},
-            temperature=0.2,
+            temperature=0.1,
             max_tokens=4000
         )
 
@@ -768,41 +948,86 @@ def extract_from_markdown(md_path: Path, output_json_path: Path,
         gazette_content = md_path.read_text(encoding='utf-8')
         print(f"    📖 Read {len(gazette_content)} chars from markdown", flush=True)
 
-        # Metadata
-        print(f"    [Stage 0/3] Extracting gazette metadata...", flush=True)
-        gazette_metadata = extract_gazette_metadata(gazette_content)
-        print(f"    └─ Gazette #{gazette_metadata['number']}, Page {gazette_metadata['page']}", flush=True)
+        # Metadata extraction using LLM (more robust than regex)
+        print(f"    [Stage 0/3] Extracting gazette metadata via LLM...", flush=True)
+        gazette_metadata = extract_gazette_metadata_llm(gazette_content)
+        print(f"    └─ Gazette #{gazette_metadata['number']}, Date: {gazette_metadata['date']}, Page {gazette_metadata['page']}", flush=True)
 
-        # Pre-detect compounds
-        print(f"    [Stage 1/3] Pre-detecting compound announcements...", flush=True)
-        compound_map = pre_detect_compound_announcements(gazette_content)
-        if compound_map:
-            print(f"    └─ Found {len(compound_map)} compound announcement(s)")
-        else:
-            print(f"    └─ No compound announcements found")
-
-        # Stage 1: Detect types (with optional company filter)
-        print(f"    [Stage 2/3] Detecting announcement types (LLM Stage 1)...", flush=True)
+        # NEW: Pre-filter gazette content if company filter is provided
+        # This saves LLM tokens by only passing relevant sections
         if company_filter:
-            print(f"    🔍 Filtering for company: '{company_filter}'", flush=True)
+            print(f"    [Stage 1/3] Pre-filtering gazette for: '{company_filter}'", flush=True)
+            relevant_sections = find_relevant_sections(gazette_content, company_filter, threshold=80)
+            
+            if relevant_sections:
+                # Combine relevant sections for LLM processing
+                filtered_content = "\n\n---\n\n".join(relevant_sections)
+                print(f"    ✅ Found {len(relevant_sections)} relevant section(s)", flush=True)
+                print(f"    📉 Reduced from {len(gazette_content):,} → {len(filtered_content):,} chars ({100 - (len(filtered_content)/len(gazette_content)*100):.0f}% reduction)", flush=True)
+            else:
+                print(f"    ⚠ No matching sections found for '{company_filter}'", flush=True)
+                # No relevant sections - save empty JSON and return
+                output_data = {
+                    'gazette_metadata': gazette_metadata,
+                    'announcements': [],
+                    'extraction_stats': {
+                        'total_announcements': 0,
+                        'successful_extractions': 0,
+                        'failed_extractions': 0,
+                        'fallback_extractions': 0
+                    },
+                    'filter_settings': {
+                        'company_filter': company_filter,
+                        'filter_method': 'pre_filter_find_relevant_sections',
+                        'filter_applied': True,
+                        'sections_found': 0
+                    }
+                }
+                with open(output_json_path, 'w', encoding='utf-8') as f:
+                    json.dump(output_data, f, indent=2, ensure_ascii=False)
+                print(f"    💾 Empty results file saved: {output_json_path.name}")
+                extraction_elapsed = (datetime.now() - extraction_start).total_seconds()
+                print(f"    ⏱ Duration: {extraction_elapsed:.1f}s")
+                return True
+        else:
+            filtered_content = gazette_content
+            print(f"    [Stage 1/3] No company filter - processing entire gazette", flush=True)
 
+        # Stage 2: Detect announcement types via LLM (LLM decides ALL types including compound)
+        print(f"    [Stage 2/3] Detecting announcement types via LLM...", flush=True)
+        print(f"    📝 Content preview (first 300 chars): {filtered_content[:300]}...", flush=True)
         detected_announcements = detect_announcement_types(
-            gazette_content,
-            company_filter=company_filter
+            filtered_content,  # Use filtered content instead of full gazette
+            company_filter=None  # No need for LLM filtering - we pre-filtered!
         )
-        print(f"    └─ Detected {len(detected_announcements)} announcement(s)", flush=True)
+        print(f"    └─ LLM detected {len(detected_announcements)} announcement(s)", flush=True)
 
-        # Override with compound detection
-        override_count = 0
-        for detected in detected_announcements:
-            if detected.mersis_no and detected.mersis_no in compound_map:
-                detected.announcement_type = "bileşik_değişiklik"
-                override_count += 1
+        if not detected_announcements:
+            print("    ⏹ No matching announcements to process after filtering. Skipping field extraction.", flush=True)
+            # Create an empty JSON file and exit successfully
+            output_data = {
+                'gazette_metadata': gazette_metadata,
+                'announcements': [],
+                'extraction_stats': {
+                    'total_announcements': 0,
+                    'successful_extractions': 0,
+                    'failed_extractions': 0,
+                    'fallback_extractions': 0
+                },
+                'filter_settings': {
+                    'company_filter': company_filter,
+                    'filter_method': 'pre_filter_find_relevant_sections',
+                    'filter_applied': True
+                }
+            }
+            with open(output_json_path, 'w', encoding='utf-8') as f:
+                json.dump(output_data, f, indent=2, ensure_ascii=False)
+            print(f"    💾 Empty results file saved: {output_json_path.name}")
+            extraction_elapsed = (datetime.now() - extraction_start).total_seconds()
+            print(f"    ⏱ Duration: {extraction_elapsed:.1f}s")
+            return True
 
-        if override_count > 0:
-            print(f"    └─ Applied {override_count} compound override(s)")
-
-        # Stage 2: Extract fields
+        # Stage 3: Extract fields for each announcement
         print(f"    [Stage 3/3] Extracting fields (LLM Stage 2)...", flush=True)
         print(f"    🔄 Processing {len(detected_announcements)} announcement(s)...", flush=True)
         sections = split_gazette_into_sections(gazette_content)
@@ -839,16 +1064,27 @@ def extract_from_markdown(md_path: Path, output_json_path: Path,
             extracted_fields = extract_announcement_fields(normalized_detected, relevant_section[:5000])
 
             metadata = UniversalMetadata(
-                gazette_date=gazette_metadata.get('date'),
-                gazette_number=gazette_metadata.get('number'),
                 registry_office=detected.registry_office or "Unknown",
                 registry_number="Unknown",
                 mersis_no=detected.mersis_no or "Unknown",
                 company_name=detected.company_name or "Unknown",
-                announcement_number=None
+                announcement_number=detected.ilan_sira_no
             )
 
-            # Try to create structured announcement
+            # SPECIAL HANDLING FOR COMPOUND: Store as raw dict to preserve dynamic keys
+            if normalized_type == "bileşik_değişiklik":
+                # For compound types, create a raw dict announcement to avoid Pydantic adding null fields
+                announcement = {
+                    'metadata': metadata.model_dump(),
+                    'announcement_type': normalized_type,
+                    'content': extracted_fields if extracted_fields else {},
+                    'raw_text': None,
+                    'extraction_success': bool(extracted_fields)
+                }
+                final_announcements.append(announcement)
+                continue  # Skip the Pydantic validation below
+
+            # Try to create structured announcement for other types
             try:
                 announcement = GazetteAnnouncement(
                     metadata=metadata,
@@ -929,6 +1165,18 @@ def extract_from_markdown(md_path: Path, output_json_path: Path,
             else:
                 announcements_output.append(a.model_dump())
 
+        # Extract gazette metadata from first announcement's content (LLM extracted)
+        if announcements_output:
+            first_content = announcements_output[0].get('content', {})
+            if isinstance(first_content, dict):
+                # Use LLM-extracted values if available
+                if first_content.get('gazette_date'):
+                    gazette_metadata['date'] = first_content.get('gazette_date')
+                if first_content.get('gazette_number'):
+                    gazette_metadata['number'] = first_content.get('gazette_number')
+                if first_content.get('gazette_page'):
+                    gazette_metadata['page'] = first_content.get('gazette_page')
+
         output_data = {
             'gazette_metadata': gazette_metadata,
             'announcements': announcements_output,
@@ -1001,9 +1249,9 @@ Examples:
         '--name',
         type=str,
         default=None,
-        help='Filter by company name using LLM semantic matching. '
+        help='Filter by company name using local fuzzy matching. '
              'Example: "MICROSOFT" will match "MICROSOFT YAZILIM TİCARET A.Ş." '
-             'The LLM handles variations, OCR errors, and partial matches intelligently.'
+             'The script handles variations, OCR errors, and partial matches locally.'
     )
 
     parser.add_argument(

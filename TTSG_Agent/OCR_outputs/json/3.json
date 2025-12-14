@@ -1,0 +1,133 @@
+{
+  "gazette_metadata": {
+    "date": "30 NISAN 2025",
+    "number": 11322,
+    "page": null
+  },
+  "announcements": [
+    {
+      "metadata": {
+        "registry_office": "ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "Unknown",
+        "company_name": "ASELSAN ELEKTRONİK SANAYI VE TICARET ANONIM ŞİRKETİ",
+        "announcement_number": ""
+      },
+      "announcement_type": "toplantı_çağrısı",
+      "content": {
+        "company": {
+          "legal_name": "ASELSAN ELEKTRONİK SANAYI VE TICARET ANONIM ŞİRKETİ",
+          "trade_name": "ASELSAN ELEKTRONİK SANAYI VE TICARET ANONIM ŞİRKETİ"
+        },
+        "meeting": {
+          "type": "Olağan Genel Kurul Toplantısı",
+          "number": 50,
+          "full_title": "ASELSAN 50. Olağan Genel Kurul Toplantısı",
+          "date": "2025-05-29",
+          "day_of_week": "Perşembe",
+          "time": "10:00",
+          "timezone": "Europe/Istanbul",
+          "location": {
+            "address": "Çankırı Yolu 7. km, Akyurt/Ankara",
+            "venue": "Akyurt Yerleşmesi"
+          }
+        },
+        "agenda_items": [
+          "Açılış, saygı duruşu, İstiklal Marşı'nın okunması ve Toplantı Başkanlığı'nın oluşturulması.",
+          "2024 yılı hesap dönemine ait Yönetim Kurulu Faaliyet Raporunun okunması ve müzakere edilmesi.",
+          "2024 yılı hesap dönemine ait Bağımsız Denetim Şirketi Raporunun okunması.",
+          "2024 yılı hesap dönemine ait Finansal Tabloların okunması, müzakere edilmesi ve onaylanması.",
+          "Yönetim Kurulu Üyelerinin 2024 yılı hesap dönemine ait faaliyetleri ve hesapları kapsamında ibrasına ilişkin karar alınması.",
+          "2024 yılı hesap dönemine ait karın kullanım şeklinin ve dağıtılacak kar payı oranının belirlenmesi.",
+          "Bağımsız Yönetim Kurulu Üyeleri dahil Yönetim Kurulu Üyelerinin seçimi ve görev sürelerinin tespiti.",
+          "Yönetim Kurulu Üyelerine verilecek ücretin tespiti.",
+          "6102 sayılı Türk Ticaret Kanunu ve 6362 sayılı Sermaye Piyasası Kanunu başta olmak üzere ilgili mevzuat gereğince Bağımsız Denetim Şirketinin seçilmesi.",
+          "2024 yılı hesap döneminde yapılan bağışlar ile üçüncü kişiler lehine verilen teminat, rehin, ipotek ve kefaletler ile elde edilen gelir veya menfaatler hakkında bilgi verilmesi.",
+          "Sermaye Piyasası Kurulu düzenlemeleri gereğince, 2024 yılında Savunma Sanayi Başkanlığı ile yapılan işlemlerin şartları ve piyasa koşulları ile karşılaştırılması hakkında raporun sunulması.",
+          "2025 yılı hesap döneminde yapılacak bağış ve yardımların üst sınırı hakkında karar alınması.",
+          "2025 yılı hesap döneminde yapılacak sponsorlukların üst sınırı hakkında karar alınması."
+        ],
+        "documents": {
+          "available_before_meeting": [
+            {
+              "name": "Genel Kurul Bilgilendirme Dokümanı",
+              "availability": "Şirket merkezi ve www-.aselsan.com/tr adresinde, toplantı tarihinden en az 3 hafta önce"
+            },
+            {
+              "name": "Vekaletname Formu",
+              "availability": "Şirket merkezi ve www-.aselsan.com/tr adresinde, toplantı tarihinden en az 3 hafta önce"
+            },
+            {
+              "name": "Sermaye Piyasası Kurulu'nun 1‑17.1 sayılı Kurumsal Yönetim Tebliği kapsamında gerekli bilgi ve belgeler",
+              "availability": "Şirket merkezi ve www-.aselsan.com/tr adresinde, toplantı tarihinden en az 3 hafta önce"
+            },
+            {
+              "name": "Genel Kurul Belgeleri (KAP üzerinden)",
+              "availability": "Kamuyu Aydınlatma Platformu (KAP) ve www.aselsan.com/tr adresinde"
+            }
+          ],
+          "access_methods": [
+            "Şirket merkezinde fiziki olarak",
+            "Şirketin resmi internet sitesi (www-.aselsan.com/tr)",
+            "Kamuyu Aydınlatma Platformu (KAP)"
+          ]
+        },
+        "participation": {
+          "physical": {
+            "description": "Pay sahipleri fiziken toplantıya katılabilir."
+          },
+          "electronic": {
+            "description": "Pay sahipleri elektronik ortamda, güvenli elektronik imza ile katılabilir.",
+            "requirements": [
+              "MKK e‑MKK Bilgi Portalı'na kayıt ve iletişim bilgilerinin güncel olarak girilmesi",
+              "Güvenli elektronik imzaya sahip olunması",
+              "Elektronik Genel Kurul Sistemi (EGKS) üzerinden işlem yapılması"
+            ],
+            "exclusion": "Güvenli elektronik imzası olmayan ve e‑MKK portalına kayıtlı olmayan pay sahipleri elektronik ortamda katılamaz."
+          },
+          "proxy": {
+            "description": "Fiziki ya da elektronik ortamda katılamayan pay sahipleri vekaletname ile temsilci gönderebilir.",
+            "proxy_form_source": [
+              "Şirket merkezi",
+              "www-.aselsan.com/tr"
+            ],
+            "legal_basis": [
+              "Sermaye Piyasası Kurulu 11‑30.1 sayılı Vekaleten Oy Kullanılması ve Çağrı Yoluyla Vekalet Toplanması Tebliği"
+            ],
+            "notarization": "Vekaletnamenin imzası noterce onaylanmalıdır."
+          }
+        },
+        "legal_references": [
+          "6102 sayılı Türk Ticaret Kanunu, md. 409",
+          "6102 sayılı Türk Ticaret Kanunu, md. 1527",
+          "6102 sayılı Türk Ticaret Kanunu, md. 415, fık. 4",
+          "6362 sayılı Sermaye Piyasası Kanunu, md. 30, fık. 1",
+          "Anonim Şirketlerde Elektronik Ortamda Yapılacak Genel Kurullara İlişkin Yönetmelik (Resmi Gazete 28395, 28.08.2012)",
+          "Elektronik Genel Kurul Sistemi Hakkında Tebliğ (Resmi Gazete 28396, 29.08.2012)"
+        ],
+        "share_blocking": {
+          "required": false,
+          "explanation": "Payların depo edilmesi şartına bağlı değildir; pay sahiplerinin paylarını bloke etmelerine gerek yoktur."
+        },
+        "announcement": {
+          "issued_by": "Yönetim Kurulu",
+          "date_of_announcement": null,
+          "note": "Sayın pay sahiplerimizin bilgilerine ilan olunur."
+        }
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
+  "extraction_stats": {
+    "total_announcements": 1,
+    "successful_extractions": 1,
+    "failed_extractions": 0,
+    "fallback_extractions": 0
+  },
+  "filter_settings": {
+    "company_filter": "ASELSAN",
+    "filter_method": "llm_semantic",
+    "filter_applied": true
+  }
+}

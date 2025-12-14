@@ -1,13 +1,38 @@
 {
   "gazette_metadata": {
     "date": null,
-    "number": 11477,
-    "page": 1
+    "number": null,
+    "page": null
   },
-  "announcements": [],
+  "announcements": [
+    {
+      "metadata": {
+        "registry_office": "İSTANBUL TİCARET SİCİLİ MÜDÜRLÜĞÜ",
+        "registry_number": "Unknown",
+        "mersis_no": "0871111379900001",
+        "company_name": "TURKCELL DİJİTAL İŞ SERVİSLERİ ANONİM ŞİRKETİ",
+        "announcement_number": "276475"
+      },
+      "announcement_type": "unknown",
+      "content": {
+        "registered_matters": "Denetçiler",
+        "registration_date": "11.12.2025",
+        "changes": [],
+        "old_address": null,
+        "new_address": null,
+        "old_capital": null,
+        "new_capital": null,
+        "capital_breakdown": null,
+        "shareholders": null,
+        "notary_info": "Beyoğlu 18. Noterliği, 4.12.2025 tarih, 18614 sayılı tasdikli belge"
+      },
+      "raw_text": null,
+      "extraction_success": true
+    }
+  ],
   "extraction_stats": {
-    "total_announcements": 0,
-    "successful_extractions": 0,
+    "total_announcements": 1,
+    "successful_extractions": 1,
     "failed_extractions": 0,
     "fallback_extractions": 0
   },

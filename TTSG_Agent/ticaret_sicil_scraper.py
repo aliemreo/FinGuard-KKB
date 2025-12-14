@@ -683,7 +683,7 @@ CAPTCHA Text:"""
                 print("="*50 + "\n")
 
                 # Wait for user to enter CAPTCHA (check if field has value)
-                wait_time = 60  # Wait up to 60 seconds
+                wait_time = 30  # Wait up to 60 seconds
                 for _ in range(wait_time):
                     if captcha_field.get_attribute('value'):
                         print("CAPTCHA entered! Proceeding with login...")
@@ -2025,7 +2025,7 @@ Examples:
 
                     # Keep browser open to see results
                     print("\nBrowser will stay open for 60 seconds so you can review the results...")
-                    login.keep_session_alive(duration=60)
+                    login.keep_session_alive(duration=3)
                 else:
                     safe_print("\n[X] Failed to fetch results")
             else:
