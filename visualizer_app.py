@@ -534,19 +534,43 @@ def run_ihale_script(params):
     process_outputs["process_1"] = []
 
     try:
+        # Convert dates from DD.MM.YYYY to YYYY.MM.DD format
+        from datetime import datetime
+        start_date = params.get("start-date", "")
+        end_date = params.get("end-date", "")
+        
+        if start_date:
+            try:
+                dt = datetime.strptime(start_date, "%d.%m.%Y")
+                start_date = dt.strftime("%Y.%m.%d")
+            except:
+                pass
+        
+        if end_date:
+            try:
+                dt = datetime.strptime(end_date, "%d.%m.%Y")
+                end_date = dt.strftime("%Y.%m.%d")
+            except:
+                pass
+        
         cmd = [
             "python",
-            "TTSG_Agent\app.py",
-            "--start-date",
-            params.get("start-date", ""),
-            "--end-date",
-            params.get("end-date", ""),
-            "--company-name",
+            "arama_motoru.py",
+            "-i",
             params.get("company-name", ""),
+            "-b",
+            start_date,
+            "-s",
+            end_date,
         ]
 
         process = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1
+            cmd, 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.STDOUT, 
+            text=True, 
+            bufsize=1,
+            env={**os.environ, "PYTHONIOENCODING": "utf-8"}
         )
 
         for line in iter(process.stdout.readline, ""):
@@ -568,17 +592,34 @@ def run_sicil_script(params):
     process_outputs["process_2"] = []
 
     try:
+        # Convert dates from DD.MM.YYYY to YYYY-MM-DD
+        from datetime import datetime
+        start_date = params.get("start-date", "")
+        end_date = params.get("end-date", "")
+        
+        if start_date:
+            try:
+                start_date = datetime.strptime(start_date, "%d.%m.%Y").strftime("%Y-%m-%d")
+            except:
+                pass
+        
+        if end_date:
+            try:
+                end_date = datetime.strptime(end_date, "%d.%m.%Y").strftime("%Y-%m-%d")
+            except:
+                pass
+        
         cmd = [
             "python",
-            "sicil_scanner.py",
-            "--start-date",
-            params.get("start-date", ""),
-            "--end-date",
-            params.get("end-date", ""),
-            "--company-name",
-            params.get("company-name", ""),
-            "--office-location",
+            "TTSG_Agent/ticaret_sicil_scraper.py",
+            "--office",
             params.get("office-location", ""),
+            "--title",
+            params.get("company-name", ""),
+            "--start-date",
+            start_date,
+            "--end-date",
+            end_date,
         ]
 
         process = subprocess.Popen(
