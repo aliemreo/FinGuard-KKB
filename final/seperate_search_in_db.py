@@ -11,7 +11,7 @@ DB_CONFIG = {
     "host": "localhost",
     "database": "ihale_db",
     "user": "postgres",
-    "password": "lolzedcr7"
+    "password": "yourpassword"
 }
 
 def baglanti_kur():
@@ -139,4 +139,5 @@ def main():
         if conn: conn.close()
 
 if __name__ == "__main__":
+
     main()
