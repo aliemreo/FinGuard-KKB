@@ -24,11 +24,11 @@ from psycopg2.extras import Json
 from typing import Dict, Any, Optional
 
 DB_CONFIG = {
-    'dbname': os.getenv('DB_NAME', 'gazette_db'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', '1234'),
+    'dbname': os.getenv('POSTGRES_DB', 'gazette_db'),
+    'user': os.getenv('POSTGRES_USER', 'postgres'),
+    'password': os.getenv('POSTGRES_PASSWORD', '1234'),
     'host': os.getenv('DB_HOST', 'localhost'),
-    'port': int(os.getenv('DB_PORT', 5432))
+    'port': int(os.getenv('POSTGRES_PORT', 5432))
 }
 
 # Input folder path (db/db_Input/)
@@ -144,7 +144,7 @@ def record_crawl_history(conn, crawl_metadata: Dict[str, Any]) -> bool:
         
         cursor = conn.cursor()
         query = """
-            INSERT INTO crawling_history (sirket_sorgusu, il, fetched_period)
+            INSERT INTO crawling_history (company_filter, city_filter, fetched_period)
             VALUES (%s, %s, daterange(%s, %s, '[)'))
         """
         cursor.execute(query, (sirket_sorgusu, il, start_date, end_date))
@@ -286,17 +286,25 @@ def main():
 
     print(f"\n[!] Note: Records with null ilan_no will be skipped.\n")
 
-    response = input("Initialize schema (will drop existing tables)? [y/N]: ")
-    initialize_schema_flag = response.lower() == 'y'
+    print(f"\n[!] Note: Records with null ilan_no will be skipped.\n")
 
     try:
         create_database_if_not_exists()
         conn = connect_to_db()
 
-        if initialize_schema_flag:
+        # Check if tables exist, if not, initialize schema
+        cursor = conn.cursor()
+        cursor.execute("SELECT to_regclass('public.ilanlar')")
+        table_exists = cursor.fetchone()[0]
+        cursor.close()
+
+        if not table_exists:
+            print("[!] Table 'ilanlar' not found. Initializing schema...")
             if not initialize_schema(conn):
                 print("[✗] Schema initialization failed. Aborting.")
                 return
+        else:
+            print("[✓] Tables exist. Skipping schema initialization.")
 
         # Import ilanlar
         stats = import_ilanlar(conn, ilanlar)

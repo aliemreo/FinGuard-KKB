@@ -21,14 +21,30 @@ env_path = root_dir / '.env'
 load_dotenv(dotenv_path=env_path)
 
 import psycopg2
+from psycopg2 import pool
 
 DB_CONFIG = {
-    'dbname': os.getenv('DB_NAME', 'gazette_db'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', '1234'),
+    'dbname': os.getenv('POSTGRES_DB', 'gazette_db'),
+    'user': os.getenv('POSTGRES_USER', 'postgres'),
+    'password': os.getenv('POSTGRES_PASSWORD', '1234'),
     'host': os.getenv('DB_HOST', 'localhost'),
-    'port': int(os.getenv('DB_PORT', 5432))
+    'port': int(os.getenv('POSTGRES_PORT', 5432))
 }
+
+# Connection pool for efficient connection reuse
+_connection_pool = None
+
+
+def _get_pool():
+    """Get or create the connection pool (lazy initialization)."""
+    global _connection_pool
+    if _connection_pool is None:
+        _connection_pool = pool.SimpleConnectionPool(
+            minconn=1,
+            maxconn=10,
+            **DB_CONFIG
+        )
+    return _connection_pool
 
 
 @dataclass
@@ -52,9 +68,14 @@ class CrawlRangeResult:
 
 
 def connect_to_db():
-    """Connect to PostgreSQL database"""
-    conn = psycopg2.connect(**DB_CONFIG)
-    return conn
+    """Get a connection from the pool."""
+    return _get_pool().getconn()
+
+
+def release_connection(conn):
+    """Return a connection to the pool."""
+    if conn and _connection_pool:
+        _connection_pool.putconn(conn)
 
 
 def check_crawl_history(
@@ -100,8 +121,8 @@ def check_crawl_history(
                 lower(fetched_period * daterange(%s, %s, '[)')) as overlap_start,
                 upper(fetched_period * daterange(%s, %s, '[)')) as overlap_end
             FROM crawling_history
-            WHERE sirket_sorgusu = %s 
-              AND il = %s
+            WHERE company_filter = %s 
+              AND city_filter = %s
               AND fetched_period && daterange(%s, %s, '[)')
             ORDER BY lower(fetched_period)
         """
@@ -126,8 +147,8 @@ def check_crawl_history(
                 COALESCE(range_agg(fetched_period), datemultirange())
             ) as missing_range
             FROM crawling_history
-            WHERE sirket_sorgusu = %s 
-              AND il = %s
+            WHERE company_filter = %s 
+              AND city_filter = %s
               AND fetched_period && daterange(%s, %s, '[)')
         """
         
@@ -176,7 +197,7 @@ def check_crawl_history(
         
     finally:
         cursor.close()
-        conn.close()
+        release_connection(conn)
 
 
 # Convenience function with string date inputs
@@ -226,7 +247,7 @@ def insert_crawl_history(
     cursor = conn.cursor()
     try:
         query = """
-            INSERT INTO crawling_history (sirket_sorgusu, il, fetched_period)
+            INSERT INTO crawling_history (company_filter, city_filter, fetched_period)
             VALUES (%s, %s, daterange(%s, %s, '[)'))
         """
         cursor.execute(query, (sirket_sorgusu, il, start_date, end_date))
@@ -239,7 +260,7 @@ def insert_crawl_history(
         return False
     finally:
         cursor.close()
-        conn.close()
+        release_connection(conn)
 
 
 def insert_crawl_history_str(
@@ -282,8 +303,8 @@ def fetch_ilanlar_by_date_range(
         query = """
             SELECT 
                 ilan_no, ilan_turu, ticaret_sicil_no, mersis_no, unvan,
-                sirket_sorgusu, il, adres, tescil_tarihi, gazete_tarihi,
-                gazete_sayisi, detaylar
+                eski_unvan, sirket_sorgusu, il, adres, tescil_tarihi, 
+                gazete_tarihi, gazete_sayisi, detaylar
             FROM ilanlar
             WHERE gazete_tarihi >= %s 
               AND gazete_tarihi < %s
@@ -303,13 +324,14 @@ def fetch_ilanlar_by_date_range(
                 "ticaret_sicil_no": row[2],
                 "mersis_no": row[3],
                 "unvan": row[4],
-                "sirket_sorgusu": row[5],
-                "il": row[6],
-                "adres": row[7],
-                "tescil_tarihi": row[8].isoformat() if row[8] else None,
-                "gazete_tarihi": row[9].isoformat() if row[9] else None,
-                "gazete_sayisi": row[10],
-                "detaylar": row[11] if row[11] else {}
+                "eski_unvan": row[5],
+                "sirket_sorgusu": row[6],
+                "il": row[7],
+                "adres": row[8],
+                "tescil_tarihi": row[9].isoformat() if row[9] else None,
+                "gazete_tarihi": row[10].isoformat() if row[10] else None,
+                "gazete_sayisi": row[11],
+                "detaylar": row[12] if row[12] else {}
             }
             results.append(entry)
         
@@ -321,7 +343,7 @@ def fetch_ilanlar_by_date_range(
         return []
     finally:
         cursor.close()
-        conn.close()
+        release_connection(conn)
 
 
 def fetch_ilanlar_by_date_range_str(

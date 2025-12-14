@@ -30,18 +30,23 @@ from typing import List, Dict, Any, Optional
 # ANNOUNCEMENT TYPE MAPPING (string → integer for database)
 # ============================================================================
 
+# REVERSE MAPPING: Database String Types -> Generator Integer Codes
 ILAN_TURU_MAP = {
-    "birleşme": 1,
+    "emtia_satışı": 1,
     "sermaye_azaltımı": 2,
-    "tasfiye": 3,
-    "mal_varlığı_devri": 4,
-    "şube_kuruluşu": 5,
-    "adres_değişikliği": 6,
-    "bileşik_değişiklik": 7,
-    "toplantı_çağrısı": 8,
-    "pay_senedi_değişimi": 9,
-    "sermaye_taahhüdü": 10,
-    "şirket_emtiası_satışı": 11,
+    "mal_varlığı_devri": 3,
+    "tasfiye": 4,
+    "pay_senedi_değişimi": 5,
+    "toplantı_çağrısı": 6,
+    "sermaye_taahhüdü": 7,
+    "birleşme": 8,
+    "şube_kuruluşu": 9,
+    "adres_değişikliği": 10,
+    "unknown": 11,
+    # Map other potential types to 'unknown' (11) or specific codes
+    "bileşik_değişiklik": 11, 
+    "genel_kurul": 6,
+    "kuruluş": 9,
 }
 
 
@@ -99,6 +104,24 @@ def process_announcement(
     if filter_settings and filter_settings.get('city_filter'):
         city_name = filter_settings['city_filter'].strip()
     
+    # Prepare detaylar (details) dict which generator expects
+    detaylar = {}
+    if content:
+        detaylar = content.copy()
+        # Generator expects 'registered_matters' (can be list or string)
+        if 'registered_matters' in content:
+            detaylar['registered_matters'] = content['registered_matters']
+        # Map specific fields generator looks for in 'detaylar'
+        if 'company_address' in content:
+            detaylar['new_address'] = content['company_address']
+        if 'capital' in content:  # If capital field exists
+            if isinstance(content['capital'], dict):
+                detaylar['new_capital'] = content['capital'].get('total_capital_TL')
+        
+        # [NEW] Map changes_summary to 'summary'
+        if 'changes_summary' in content:
+            detaylar['summary'] = content['changes_summary']
+    
     # Check if this is a compound announcement with sub-announcements array
     # (Structure 1: content.announcements[])
     if ann_type == "bileşik_değişiklik" and content and isinstance(content.get('announcements'), list):
@@ -108,42 +131,46 @@ def process_announcement(
             if not sub_ann or all(v is None for v in sub_ann.values()):
                 continue
             
+            sub_detaylar = sub_ann.copy()
+            # Inherit common fields from main content if not present
+            if 'registered_matters' not in sub_detaylar and 'registered_matters' in detaylar:
+                 sub_detaylar['registered_matters'] = detaylar['registered_matters']
+
             entry = {
-                "ilan_no": metadata.get('announcement_number'),  # From metadata
-                "ilan_turu": ILAN_TURU_MAP.get(ann_type, 7),
+                "ilan_no": metadata.get('announcement_number'),
+                "ilan_turu": ILAN_TURU_MAP.get(ann_type, 11), # Default to 11 (Unknown/Bileşik)
                 "ticaret_sicil_no": metadata.get('registry_number') if metadata.get('registry_number') != 'Unknown' else None,
                 "mersis_no": metadata.get('mersis_no') if metadata.get('mersis_no') != 'Unknown' else None,
                 "unvan": sub_ann.get('company_name') or metadata.get('company_name'),
-                "eski_unvan": metadata.get('old_company_name'),  # From metadata.old_company_name
+                "eski_unvan": metadata.get('old_company_name'),
                 "sirket_sorgusu": filter_settings.get('company_filter') if filter_settings else None,
                 "sicil_mudurluk": metadata.get('registry_office') if metadata.get('registry_office') != 'Unknown' else None,
-                "il": city_name,  # From filter_settings.city_filter (as string)
-                "adres": metadata.get('address'),  # From metadata.address
+                "il": city_name,
+                "adres": metadata.get('address'),
                 "gazete_tarihi": gazette_date,
                 "gazete_sayisi": str(gazette_number) if gazette_number else None,
-                "metin": raw_text,  # From raw_text
-                "detaylar": sub_ann  # Each sub-announcement as detaylar
+                "metin": raw_text,
+                "detaylar": sub_detaylar
             }
             entries.append(entry)
     
     else:
-        # Normal announcement OR compound without sub-array (Structure 2)
-        # Creates a single entry
+        # Normal announcement
         entry = {
-            "ilan_no": metadata.get('announcement_number'),  # From metadata
-            "ilan_turu": ILAN_TURU_MAP.get(ann_type),  # Map type to int, None if unknown
+            "ilan_no": metadata.get('announcement_number'),
+            "ilan_turu": ILAN_TURU_MAP.get(ann_type, 11), # Default to 11 (Unknown)
             "ticaret_sicil_no": metadata.get('registry_number') if metadata.get('registry_number') != 'Unknown' else None,
             "mersis_no": metadata.get('mersis_no') if metadata.get('mersis_no') != 'Unknown' else None,
             "unvan": metadata.get('company_name') if metadata.get('company_name') != 'Unknown' else None,
-            "eski_unvan": metadata.get('old_company_name'),  # From metadata.old_company_name
+            "eski_unvan": metadata.get('old_company_name'),
             "sirket_sorgusu": filter_settings.get('company_filter') if filter_settings else None,
             "sicil_mudurluk": metadata.get('registry_office') if metadata.get('registry_office') != 'Unknown' else None,
-            "il": city_name,  # From filter_settings.city_filter (as string)
-            "adres": metadata.get('address'),  # From metadata.address
+            "il": city_name,
+            "adres": metadata.get('address'),
             "gazete_tarihi": gazette_date,
             "gazete_sayisi": str(gazette_number) if gazette_number else None,
-            "metin": raw_text,  # From raw_text
-            "detaylar": content if content else None  # Entire content object
+            "metin": raw_text, 
+            "detaylar": detaylar
         }
         entries.append(entry)
     

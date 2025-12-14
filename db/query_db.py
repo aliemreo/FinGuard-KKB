@@ -30,11 +30,11 @@ if sys.platform == 'win32':
 
 # Database configuration
 DB_CONFIG = {
-    'dbname': os.getenv('DB_NAME', 'gazette_db'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASSWORD', '1234'),
+    'dbname': os.getenv('POSTGRES_DB', 'gazette_db'),
+    'user': os.getenv('POSTGRES_USER', 'postgres'),
+    'password': os.getenv('POSTGRES_PASSWORD', '1234'),
     'host': os.getenv('DB_HOST', 'localhost'),
-    'port': int(os.getenv('DB_PORT', 5432))
+    'port': int(os.getenv('POSTGRES_PORT', 5432))
 }
 
 # İlan türü names mapping

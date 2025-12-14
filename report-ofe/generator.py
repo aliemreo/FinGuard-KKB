@@ -168,11 +168,12 @@ for item in data_buckets["sicil"]:
     address = item.get("adres") or item.get("new_address", "-")
     ilan_no = item.get("ilan_no", "-")
     ticaret_sicil_no = item.get("ticaret_sicil_no", "-")
+    mersis_no = item.get("mersis_no", "-")
     ilan_type = get_ilan_type(item.get("ilan_turu"))
 
     # Extract registered matters from detaylar if present
     registered_matters = []
-    det = item.get("detaylar", {})
+    det = item.get("detaylar") or {}
     if det and det.get("registered_matters"):
         rm = det["registered_matters"]
         # Ensure it's always a list (not a string that gets iterated char-by-char)
@@ -260,10 +261,14 @@ for item in data_buckets["sicil"]:
             "company_name": company,
             "address": address,
             "ilan_no": ilan_no,
+            "ilan_no": ilan_no,
             "ticaret_sicil_no": ticaret_sicil_no,
+            "mersis_no": mersis_no,
             "ilan_type": ilan_type,
             "registered_matters": registered_matters,
             "details": " • ".join(details_parts) if details_parts else "",
+            "summary": det.get("summary"),  # Extract summary
+            "raw_json_content": json.dumps(det, indent=2, ensure_ascii=False) if det else "{}"
         }
     )
 
@@ -625,8 +630,13 @@ html_template = """
                         </div>
                         <h3 style="margin: 6px 0 8px 0; font-size:1.05rem; color:#0f172a;">{{ item.company_name }}</h3>
                         {% if item.ticaret_sicil_no and item.ticaret_sicil_no != "-" %}
-                        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px;">
+                        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 2px;">
                             <strong>Ticaret Sicil No:</strong> {{ item.ticaret_sicil_no }}
+                        </div>
+                        {% endif %}
+                        {% if item.mersis_no and item.mersis_no != "-" %}
+                        <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 6px;">
+                            <strong>Mersis No:</strong> {{ item.mersis_no }}
                         </div>
                         {% endif %}
                         {% if item.registered_matters %}
@@ -642,6 +652,25 @@ html_template = """
                     </div>
                 </div>
                 
+                {% if item.summary %}
+                <div style="background-color: #f8fafc; border-left: 3px solid #6366f1; padding: 8px 12px; margin: 8px 0; border-radius: 0 4px 4px 0;">
+                    <p style="color:#334155; font-size:0.9rem; margin:0; font-style: italic;">
+                        {{ item.summary }}
+                    </p>
+                </div>
+                {% endif %}
+
+                {% if item.raw_json_content and item.raw_json_content != "{}" %}
+                <details style="margin-top: 10px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px;">
+                    <summary style="cursor: pointer; padding: 6px; font-size: 0.8rem; font-weight: 600; color: #475569; background-color: #f8fafc; outline: none;">
+                        🔍 Raw JSON Content
+                    </summary>
+                    <div style="background-color: #1e293b; color: #cbd5e1; padding: 10px; border-radius: 4px; overflow-x: auto; margin-top: 4px;">
+                        <pre style="margin: 0; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 0.75rem; white-space: pre-wrap;">{{ item.raw_json_content }}</pre>
+                    </div>
+                </details>
+                {% endif %}
+
                 <p style="color:#334155; font-size:0.85rem; line-height:1.5; margin-top:8px; margin-bottom: 4px;">
                     <strong>Adres:</strong> {{ item.address }}
                 </p>

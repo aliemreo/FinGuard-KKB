@@ -203,6 +203,45 @@ def run_import_to_postgres():
     return True
 
 
+def run_report_generator(company_name: str, start_date: str, end_date: str):
+    """Run generator.py to create the HTML report."""
+    print("\n" + "="*80)
+    print("STEP: GENERATING HTML REPORT")
+    print("="*80)
+    
+    python_exe = sys.executable
+    script_dir = Path(__file__).parent
+    root_dir = script_dir.parent
+    script_path = root_dir / "report-ofe" / "generator.py"
+    
+    # helper to format date from yyyy-mm-dd to dd.mm.yyyy for generator
+    def fmt_date(d):
+        try:
+            return datetime.strptime(d, "%Y-%m-%d").strftime("%d.%m.%Y")
+        except:
+            return d
+
+    s_date = fmt_date(start_date)
+    e_date = fmt_date(end_date)
+
+    cmd_str = f'"{python_exe}" "{script_path}" --company-name "{company_name}" --start-date "{s_date}" --end-date "{e_date}"'
+    
+    # Run in report-ofe directory because it looks for relative paths (e.g. news.json)
+    cwd_path = root_dir / "report-ofe"
+    
+    print(f"Running report generator for {company_name} ({s_date} - {e_date})...")
+    result = subprocess.run(cmd_str, shell=True, cwd=str(cwd_path))
+    
+    if result.returncode != 0:
+        print("\n❌ Report generation failed!")
+        return False
+    
+    report_path = cwd_path / "Final_Report.html"
+    print(f"\n✅ Report generated successfully!")
+    print(f"   📄 File: {report_path}")
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Turkish Trade Registry Gazette Processing Pipeline',
@@ -398,6 +437,11 @@ Examples:
     # STEP 4: IMPORT TO POSTGRESQL
     # =========================================================================
     run_import_to_postgres()
+    
+    # =========================================================================
+    # STEP 5: GENERATE HTML REPORT
+    # =========================================================================
+    run_report_generator(args.name, args.start_date, args.end_date)
     
     # =========================================================================
     # FINAL SUMMARY

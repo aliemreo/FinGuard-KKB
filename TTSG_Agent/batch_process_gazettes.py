@@ -1004,7 +1004,8 @@ Text:
         }
 
 def extract_from_markdown(md_path: Path, output_json_path: Path,
-                         company_filter: Optional[str] = None) -> bool:
+                         company_filter: Optional[str] = None,
+                         city_filter: Optional[str] = None) -> bool:
     """
     Extract structured data from a markdown gazette
 
@@ -1012,6 +1013,7 @@ def extract_from_markdown(md_path: Path, output_json_path: Path,
         md_path: Path to markdown file
         output_json_path: Path for output JSON
         company_filter: Optional company name to filter by (LLM semantic matching)
+        city_filter: Optional city name to filter by (registry office location)
 
     Returns:
         True if extraction succeeded, False otherwise
@@ -1054,6 +1056,7 @@ def extract_from_markdown(md_path: Path, output_json_path: Path,
                     },
                     'filter_settings': {
                         'company_filter': company_filter,
+                        'city_filter': city_filter,
                         'filter_method': 'pre_filter_find_relevant_sections',
                         'filter_applied': True,
                         'sections_found': 0
@@ -1092,6 +1095,7 @@ def extract_from_markdown(md_path: Path, output_json_path: Path,
                 },
                 'filter_settings': {
                     'company_filter': company_filter,
+                    'city_filter': city_filter,
                     'filter_method': 'pre_filter_find_relevant_sections',
                     'filter_applied': True
                 }
@@ -1265,9 +1269,10 @@ def extract_from_markdown(md_path: Path, output_json_path: Path,
         }
 
         # Add filter settings if company filter was applied
-        if company_filter:
+        if company_filter or city_filter:
             output_data['filter_settings'] = {
                 'company_filter': company_filter,
+                'city_filter': city_filter,
                 'filter_method': 'llm_semantic',  # LLM does the filtering, not fuzzy match
                 'filter_applied': True
             }
@@ -1328,6 +1333,12 @@ Examples:
         help='Filter by company name using local fuzzy matching. '
              'Example: "MICROSOFT" will match "MICROSOFT YAZILIM TİCARET A.Ş." '
              'The script handles variations, OCR errors, and partial matches locally.'
+    )
+
+    parser.add_argument(
+        '--office',
+        type=str,
+        default=None
     )
 
     parser.add_argument(
@@ -1453,7 +1464,8 @@ Examples:
             if extract_from_markdown(
                 md_path=md_path,
                 output_json_path=json_path,
-                company_filter=args.name
+                company_filter=args.name,
+                city_filter=args.office
             ):
                 total_extracted += 1
 
