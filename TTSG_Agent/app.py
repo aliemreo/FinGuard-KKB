@@ -117,7 +117,7 @@ def run_scraper(office: str, name: str, start_date: str, end_date: str):
     print("="*80)
     
     python_exe = sys.executable
-    scraper_script = os.path.join(os.getcwd(), "ticaret_sicil_scraper copy.py")
+    scraper_script = os.path.join(os.getcwd(), "ticaret_sicil_scraper.py")
     gazette_dir = os.getenv("GAZETTE_DIR", "scrapped_pdf_files")
 
     cmd_str = f'"{python_exe}" "{scraper_script}" --office "{office}" --title "{name}" --download-pdf --pdf-output-dir "{gazette_dir}"'
