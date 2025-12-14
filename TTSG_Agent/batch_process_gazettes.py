@@ -361,38 +361,101 @@ def find_relevant_sections(gazette_content, company_name, threshold=80):
     # Split by registry office headers
     # The pattern looks for a line starting with '##' and containing 'MÜDÜR' (with or without 'T.C.')
     # Examples: "## T.C. ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ" or "## ANKARA TİCARET SİCİLİ MÜDÜRLÜĞÜ"
-    sections = re.split(r'(?=^##.*MÜDÜR)', gazette_content, flags=re.MULTILINE)
-    
+    registry_sections = re.split(r'(?=^##.*MÜDÜR)', gazette_content, flags=re.MULTILINE)
+
     # Remove the first section (header part before registry offices)
-    if sections and not sections[0].strip().startswith('##'):
-        sections = sections[1:]
-    
+    if registry_sections and not registry_sections[0].strip().startswith('##'):
+        registry_sections = registry_sections[1:]
+
     relevant_sections = []
     company_name_upper = company_name.upper().strip()
 
-    for section in sections:
-        if not section.strip():
+    for registry_section in registry_sections:
+        if not registry_section.strip():
             continue
 
-        section_upper = section.upper()
-        
-        # PRIMARY: Direct string search (case-insensitive)
-        # This is the most reliable method
-        if company_name_upper in section_upper:
-            relevant_sections.append(section.strip())
-            continue
-        
-        # SECONDARY: Try partial matching for OCR errors (e.g., "TURCELL" vs "TURKCELL")
-        # Only if the company name is at least 5 chars to avoid false positives
-        if len(company_name_upper) >= 5:
-            # Use token_set_ratio which handles word order and partial matches
-            score = fuzz.token_set_ratio(company_name_upper, section_upper)
-            if score >= threshold:
-                # Additional check: verify at least part of the name appears
-                name_parts = company_name_upper.split()
-                if any(part in section_upper for part in name_parts if len(part) >= 4):
-                    relevant_sections.append(section.strip())
-            
+        # Further split each registry section into individual company announcements
+        # Announcements typically start with "**İlan Sıra No:**" pattern
+        announcement_parts = re.split(r'(?=\*\*İlan Sıra No:)', registry_section)
+
+        # Keep the registry header with the first announcement
+        if len(announcement_parts) > 1:
+            registry_header = announcement_parts[0]
+            announcements = announcement_parts[1:]
+        else:
+            # No announcement pattern found, treat entire section as one announcement
+            registry_header = ""
+            announcements = [registry_section]
+
+        for announcement in announcements:
+            if not announcement.strip():
+                continue
+
+            # Combine with registry header for context
+            full_announcement = (registry_header + "\n" + announcement).strip()
+            announcement_upper = full_announcement.upper()
+
+            # PRIMARY: Exact word match using word boundaries
+            # This prevents "BAYKAR" from matching "BAYKARA" in substring search
+            # Use regex to ensure we're matching complete words only
+            exact_pattern = r'\b' + re.escape(company_name_upper) + r'\b'
+            if re.search(exact_pattern, announcement_upper):
+                relevant_sections.append(full_announcement)
+                continue
+
+            # SECONDARY: Fuzzy matching for OCR errors (e.g., "TURKCELL" vs "TURCELL")
+            # Only if the company name is at least 5 chars to avoid false positives
+            if len(company_name_upper) >= 5:
+                # Extract potential company names from the announcement (lines with ###)
+                # This prevents matching against the entire announcement text
+                company_name_lines = re.findall(r'###\s*(.+)', full_announcement)
+
+                for line in company_name_lines:
+                    line_upper = line.upper().strip()
+
+                    # Use partial_ratio to find the company name within the line
+                    # partial_ratio finds the best matching substring
+                    partial_score = fuzz.partial_ratio(company_name_upper, line_upper)
+
+                    # High threshold to avoid false matches
+                    # Also check that lengths are similar (within 20% difference)
+                    # This prevents "BAYKAR" from matching "BAYKARA MİMARLIK YAPI..."
+                    if partial_score >= 80:
+                        # Extract just the company name part (before the first space after matching)
+                        words_in_line = line_upper.split()
+                        for i in range(len(words_in_line)):
+                            # Check if this word or combination of words matches closely
+                            for j in range(i, min(i + 3, len(words_in_line))):
+                                candidate = ' '.join(words_in_line[i:j+1])
+
+                                # Use ratio (Levenshtein distance) for matching
+                                ratio_score = fuzz.ratio(company_name_upper, candidate)
+                                len_diff = abs(len(candidate) - len(company_name_upper))
+
+                                # Smart threshold based on length difference:
+                                # - Same length (OCR errors like "BAYKA8"): use standard threshold (80)
+                                # - Different length (like "BAYKARA"): require very high score (95+)
+                                # This prevents "BAYKAR" from matching "BAYKARA" (score ~92)
+                                # while still catching OCR errors like "BAYKA8" (score ~83)
+
+                                if len_diff == 0:
+                                    # Same length: allow OCR character substitutions
+                                    if ratio_score >= threshold:
+                                        relevant_sections.append(full_announcement)
+                                        break
+                                elif len_diff <= 2:
+                                    # Different length by 1-2 chars: require near-perfect match
+                                    # This rejects "BAYKARA" (92.3) but might allow very close OCR errors
+                                    if ratio_score >= 95:
+                                        relevant_sections.append(full_announcement)
+                                        break
+                            else:
+                                continue
+                            break
+                        else:
+                            continue
+                        break
+
     return relevant_sections
 
 def pre_detect_compound_announcements(markdown_content: str) -> dict:
@@ -447,29 +510,42 @@ Extract the gazette publication metadata from the OCR text.
 
 IMPORTANT: The gazette header is split across LEFT and RIGHT columns. You must search the ENTIRE text carefully.
 
+⚠️ CRITICAL - HANDLING FRAGMENTED TEXT:
+OCR column splitting may cause text fragmentation. Be ROBUST to incomplete words:
+- "TURKIYE TICARE" → truncated, but still indicates gazette context
+- "I SICILI GAZETESI" → starts mid-word ("TİCARET SİCİLİ" split), but contains gazette keywords
+- FOCUS ON EXTRACTING THE NUMBERS even if surrounding text is fragmented
+- Example: "SAYFA : 704 TURKIYE TICARE" → extract page=704
+- Example: "I SICILI GAZETESI 5 ARALIK 2025 SAYI: 11473" → extract date="5 ARALIK 2025", number=11473
+
 METADATA TO EXTRACT:
 1. gazette_date: Publication date in Turkish format with day, month name, and year
    - Format: "DD MONTH_NAME YYYY" (e.g., "2 ARALIK 2025", "27 KASIM 2025", "7 EKİM 2025")
    - Turkish months: OCAK, ŞUBAT, MART, NİSAN, MAYIS, HAZİRAN, TEMMUZ, AĞUSTOS, EYLÜL, EKİM, KASIM, ARALIK
    - Usually appears near "SAYI:"
+   - May appear in fragmented context like "I SICILI GAZETESI 5 ARALIK 2025"
 
 2. gazette_number: The SAYI (gazette issue number)
    - Look for "SAYI:" or "SAYI :" followed by 4-5 digits (e.g., 11470, 11452, 11431)
    - Usually appears near the date
+   - Extract the number even if text around it is incomplete
 
 3. gazette_page: The SAYFA (page number)
-   - Look for "SAYFA:" or "SAYFA ;" or "SAYFA :" followed by 1-4 digits (e.g., 273, 894, 1152)
+   - Look for "SAYFA:" or "SAYFA ;" or "SAYFA :" followed by 1-4 digits (e.g., 273, 894, 1152, 704)
    - Can be separated from date and SAYI
+   - Extract the number even if followed by truncated text like "TURKIYE TICARE"
 
 COMMON PATTERNS:
 - Left column: "2 ARALIK 2025 SAYI: 11470" | Right column: "SAYFA: 273"
 - Left column: "SAYFA ; 894" | Right column: "6 KASIM 2025 SAYI: 11452"
 - Single location: "SAYFA :386 TÜRKİYE TİCARET SİCİLİ GAZETESİ 7 EKİM 2025 SAYI: 11431"
+- Fragmented: "SAYFA : 704 TURKIYE TICARE" (extract 704) + "I SICILI GAZETESI 5 ARALIK 2025 SAYI: 11473" (extract date and number)
 
 INSTRUCTIONS:
 - Search BOTH "LEFT COLUMN" and "RIGHT COLUMN" (marked as "=== RIGHT COLUMN ===")
 - Extract only the NUMERIC values for gazette_number and gazette_page (as integers)
 - Extract the FULL date string for gazette_date (with Turkish month name)
+- Be ROBUST to fragmented/truncated text - focus on the numbers and recognizable date patterns
 - If you cannot find a field with certainty, use null for that field
 
 Return JSON with gazette_date (string), gazette_number (integer), and gazette_page (integer)."""
