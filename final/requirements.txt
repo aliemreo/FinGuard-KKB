@@ -1,0 +1,16 @@
+requests
+beautifulsoup4
+pypdf
+pytesseract
+pdf2image
+pdfplumber
+rapidfuzz
+Pillow
+opencv-python
+pymupdf
+python-dotenv
+openai
+psycopg2-binary
+paddleocr
+paddlepaddle-gpu
+numpy

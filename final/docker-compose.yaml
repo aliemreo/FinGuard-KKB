@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  ihale-app:
+    build: .
+    image: ihale-projesi:v2
+    container_name: ihale_container_final
+    # Veritabanı hazır olmadan kod başlamasın
+    depends_on:
+      - db
+    # GPU Desteği (Varsa kullanır)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Container kapanmasın
+    tty: true
+    stdin_open: true
+    # Dosyaları içeri bağla
+    volumes:
+      - .:/workspace
+    # Environment değişkeni olarak DB bilgisini geçelim
+    environment:
+      - DB_HOST=db
+      - DB_NAME=ihale_db
+      - DB_USER=myusername
+      - DB_PASS=mypassword
+
+  # --- SERVİS 2: POSTGRESQL VERİTABANI ---
+  db:
+    image: postgres:15
+    container_name: ihale_db_server
+    restart: always
+    environment:
+      POSTGRES_USER: myusername
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: ihale_db
+    volumes:
+      # Veritabanı verileri kaybolmasın diye Docker volume
+      - pgdata:/var/lib/postgresql/data
+      # Tabloyu otomatik oluşturmak için SQL dosyasını atıyoruz
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    # Dışarıdan (DBeaver vb.) erişmek istersen port aç
+    ports:
+      - "5432:5432"
+
+# Verilerin saklanacağı depo
+volumes:
+
+  pgdata:

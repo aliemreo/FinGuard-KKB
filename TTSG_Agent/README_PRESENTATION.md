@@ -4,6 +4,20 @@
 
 ---
 
+## 📊 Data Flow At-a-Glance
+
+```mermaid
+flowchart LR
+    GOV["🌐 Gov Site<br/>(CAPTCHA)"] --> PDF["📄 PDFs"]
+    PDF --> MD["📝 Markdown<br/>(OCR)"]
+    MD --> LLM["🤖 LLM<br/>Extraction"]
+    LLM --> JSON["📊 Structured<br/>JSON"]
+    JSON --> DB[("🗄️ PostgreSQL<br/>Database")]
+    DB --> REPORT["📋 HTML<br/>Report"]
+```
+
+---
+
 ## 🌐 Schema 1: General Pipeline Overview
 
 This schema shows the high-level flow from user input to final database storage and reporting.
@@ -51,16 +65,12 @@ flowchart TB
     DB --> REPORT
 ```
 
-### 📦 Used Modules
+### 🔌 External Dependencies
 
-| Layer | Module |
-|-------|--------|
-| Orchestrator | `app.py` |
-| Web Acquisition | `ticaret_sicil_scraper.py` |
-| Agentic Processing | `batch_process_gazettes.py` |
-| Format Conversion | `json_to_ilanlar.py` |
-| Database | `db/db_utils.py`, `db/import_to_postgres.py` |
-| Reporting | `report-ofe/generator.py` |
+| Purpose | Technology |
+|---------|------------|
+| LLM Intelligence | GPT-OSS-120B (OpenAI API) |
+| Database | PostgreSQL + psycopg2 |
 
 ---
 
@@ -99,13 +109,11 @@ flowchart TD
     SUMMARY --> END2([Pipeline Complete])
 ```
 
-### 📦 Used Modules
+### 🔌 External Dependencies
 
-| Stage | Module |
-|-------|--------|
-| Orchestrator Core | `app.py` |
-| History Management | `db/db_utils.py` |
-| Subprocess Runners | Internal subprocess calls to other modules |
+| Purpose | Technology |
+|---------|------------|
+| Database Queries | PostgreSQL + psycopg2 |
 
 ---
 
@@ -140,13 +148,12 @@ flowchart LR
     PAGINATE --> SAVE
 ```
 
-### 📦 Used Modules
+### 🔌 External Dependencies
 
-| Stage | Module |
-|-------|--------|
-| Web Automation | `ticaret_sicil_scraper.py` |
+| Purpose | Technology |
+|---------|------------|
 | CAPTCHA Solving | Ollama VLM (minicpm-v) |
-| Browser Driver | Selenium WebDriver |
+| Browser Automation | Selenium WebDriver |
 
 ---
 
@@ -213,44 +220,82 @@ flowchart TD
 | 10 | Address Change | Location update |
 | 11 | Compound | Multiple changes |
 
-### 📦 Used Modules
+### 🔌 External Dependencies
 
-| Stage | Module / Technology |
-|-------|---------------------|
-| Batch Processor Core | `batch_process_gazettes.py` |
-| PDF Rendering | PyMuPDF |
+| Purpose | Technology |
+|---------|------------|
+| PDF Rendering | PyMuPDF (fitz) |
 | Text Extraction | Tesseract OCR |
-| LLM Intelligence | OpenAI-compatible API |
-| Data Validation | Pydantic Models |
+| LLM Intelligence | GPT-OSS-120B (OpenAI API) |
+| Data Validation | Pydantic |
 
 ---
 
-## 📊 Data Flow At-a-Glance
+## 🗄️ Database Schema
 
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    GAZETTES ||--o{ ANNOUNCEMENTS : contains
+    CRAWLING_HISTORY ||--o| GAZETTES : tracks
+
+    GAZETTES {
+        int id PK
+        date gazette_date
+        int gazette_number
+        int gazette_page
+        varchar source_file
+        timestamp created_at
+    }
+
+    ANNOUNCEMENTS {
+        int id PK
+        int gazette_id FK
+        varchar registry_office
+        varchar registry_number
+        varchar mersis_no
+        varchar company_name
+        varchar announcement_number
+        varchar announcement_type
+        text company_address
+        date registration_date
+        text changes_summary
+        jsonb content
+        varchar city
+        timestamp created_at
+    }
+
+    CRAWLING_HISTORY {
+        int id PK
+        varchar company_filter
+        varchar city_filter
+        daterange fetched_period
+        timestamp created_at
+    }
 ```
-┌────────────┐     ┌────────────┐     ┌────────────┐     ┌────────────┐
-│  Gov Site  │────▶│    PDFs    │────▶│  Markdown  │────▶│   LLM      │
-│ (CAPTCHA)  │     │            │     │   (OCR)    │     │ Extraction │
-└────────────┘     └────────────┘     └────────────┘     └────────────┘
-                                                               │
-      ┌────────────────────────────────────────────────────────┘
-      ▼
-┌────────────┐     ┌────────────┐     ┌────────────┐
-│ Structured │────▶│ PostgreSQL │────▶│    HTML    │
-│   JSON     │     │  Database  │     │   Report   │
-└────────────┘     └────────────┘     └────────────┘
-```
 
----
+### Table Descriptions
 
-## 🔗 Complete Module Reference
+| Table | Purpose |
+|-------|---------|
+| `gazettes` | Stores gazette-level metadata (date, number, page) |
+| `announcements` | Individual announcements with company info and extracted fields |
+| `crawling_history` | Tracks previously fetched date ranges to avoid redundant scraping |
 
-| Module | Purpose | Key Technologies |
-|--------|---------|------------------|
-| `app.py` | Central orchestrator, gap detection, subprocess coordination | Python subprocess, argparse |
-| `ticaret_sicil_scraper.py` | Web authentication, CAPTCHA solving, PDF download | Selenium, Ollama VLM |
-| `batch_process_gazettes.py` | OCR, LLM-based extraction, type detection | PyMuPDF, Tesseract, OpenAI API, Pydantic |
-| `json_to_ilanlar.py` | Format conversion for database import | JSON processing |
-| `db/db_utils.py` | Database utilities, history management | psycopg2, connection pooling |
-| `db/import_to_postgres.py` | Data import to PostgreSQL | psycopg2 |
-| `report-ofe/generator.py` | HTML/PDF report generation | HTML templating |
+### Key Fields in `announcements`
+
+| Field | Description |
+|-------|-------------|
+| `mersis_no` | 16-digit unique company identifier |
+| `company_name` | Full legal company name |
+| `announcement_type` | One of 11 categories (merger, liquidation, etc.) |
+| `content` | JSONB field with type-specific extracted data |
+| `city` | Derived from registry office location |
+
+### 🔌 External Dependencies
+
+| Purpose | Technology |
+|---------|------------|
+| Database | PostgreSQL 15+ |
+| Connection Pooling | psycopg2 |
