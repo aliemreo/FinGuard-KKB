@@ -1,7 +1,6 @@
-# 1. Baz İmaj (Senin istediğin)
+# 1. Baz İmaj 
 FROM ozcanal22/my-paddleocr-normal:v1
-
-# 2. Yetki sorununu çözmek için ROOT kullanıcısına geçiyoruz
+# 2. User
 USER root
 
 # 3. Çalışma Dizini
@@ -22,4 +21,5 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 6. Container sürekli açık kalsın diye bash başlatıyoruz
+
 CMD ["/bin/bash"]
