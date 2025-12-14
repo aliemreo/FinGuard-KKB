@@ -4,6 +4,24 @@
 
 ---
 
+## 📊 Data Flow At-a-Glance
+
+```
+┌────────────┐     ┌────────────┐     ┌────────────┐     ┌────────────┐
+│  Gov Site  │────▶│    PDFs    │────▶│  Markdown  │────▶│   LLM      │
+│ (CAPTCHA)  │     │            │     │   (OCR)    │     │ Extraction │
+└────────────┘     └────────────┘     └────────────┘     └────────────┘
+                                                               │
+      ┌────────────────────────────────────────────────────────┘
+      ▼
+┌────────────┐     ┌────────────┐     ┌────────────┐
+│ Structured │────▶│ PostgreSQL │────▶│    HTML    │
+│   JSON     │     │  Database  │     │   Report   │
+└────────────┘     └────────────┘     └────────────┘
+```
+
+---
+
 ## 🌐 Schema 1: General Pipeline Overview
 
 This schema shows the high-level flow from user input to final database storage and reporting.
@@ -51,16 +69,12 @@ flowchart TB
     DB --> REPORT
 ```
 
-### 📦 Used Modules
+### 🔌 External Dependencies
 
-| Layer | Module |
-|-------|--------|
-| Orchestrator | `app.py` |
-| Web Acquisition | `ticaret_sicil_scraper.py` |
-| Agentic Processing | `batch_process_gazettes.py` |
-| Format Conversion | `json_to_ilanlar.py` |
-| Database | `db/db_utils.py`, `db/import_to_postgres.py` |
-| Reporting | `report-ofe/generator.py` |
+| Purpose | Technology |
+|---------|------------|
+| LLM Intelligence | GPT-OSS-120B (OpenAI API) |
+| Database | PostgreSQL + psycopg2 |
 
 ---
 
@@ -99,13 +113,11 @@ flowchart TD
     SUMMARY --> END2([Pipeline Complete])
 ```
 
-### 📦 Used Modules
+### 🔌 External Dependencies
 
-| Stage | Module |
-|-------|--------|
-| Orchestrator Core | `app.py` |
-| History Management | `db/db_utils.py` |
-| Subprocess Runners | Internal subprocess calls to other modules |
+| Purpose | Technology |
+|---------|------------|
+| Database Queries | PostgreSQL + psycopg2 |
 
 ---
 
@@ -140,13 +152,12 @@ flowchart LR
     PAGINATE --> SAVE
 ```
 
-### 📦 Used Modules
+### 🔌 External Dependencies
 
-| Stage | Module |
-|-------|--------|
-| Web Automation | `ticaret_sicil_scraper.py` |
+| Purpose | Technology |
+|---------|------------|
 | CAPTCHA Solving | Ollama VLM (minicpm-v) |
-| Browser Driver | Selenium WebDriver |
+| Browser Automation | Selenium WebDriver |
 
 ---
 
@@ -213,44 +224,13 @@ flowchart TD
 | 10 | Address Change | Location update |
 | 11 | Compound | Multiple changes |
 
-### 📦 Used Modules
+### 🔌 External Dependencies
 
-| Stage | Module / Technology |
-|-------|---------------------|
-| Batch Processor Core | `batch_process_gazettes.py` |
-| PDF Rendering | PyMuPDF |
+| Purpose | Technology |
+|---------|------------|
+| PDF Rendering | PyMuPDF (fitz) |
 | Text Extraction | Tesseract OCR |
-| LLM Intelligence | OpenAI-compatible API |
-| Data Validation | Pydantic Models |
+| LLM Intelligence | GPT-OSS-120B (OpenAI API) |
+| Data Validation | Pydantic |
 
----
 
-## 📊 Data Flow At-a-Glance
-
-```
-┌────────────┐     ┌────────────┐     ┌────────────┐     ┌────────────┐
-│  Gov Site  │────▶│    PDFs    │────▶│  Markdown  │────▶│   LLM      │
-│ (CAPTCHA)  │     │            │     │   (OCR)    │     │ Extraction │
-└────────────┘     └────────────┘     └────────────┘     └────────────┘
-                                                               │
-      ┌────────────────────────────────────────────────────────┘
-      ▼
-┌────────────┐     ┌────────────┐     ┌────────────┐
-│ Structured │────▶│ PostgreSQL │────▶│    HTML    │
-│   JSON     │     │  Database  │     │   Report   │
-└────────────┘     └────────────┘     └────────────┘
-```
-
----
-
-## 🔗 Complete Module Reference
-
-| Module | Purpose | Key Technologies |
-|--------|---------|------------------|
-| `app.py` | Central orchestrator, gap detection, subprocess coordination | Python subprocess, argparse |
-| `ticaret_sicil_scraper.py` | Web authentication, CAPTCHA solving, PDF download | Selenium, Ollama VLM |
-| `batch_process_gazettes.py` | OCR, LLM-based extraction, type detection | PyMuPDF, Tesseract, OpenAI API, Pydantic |
-| `json_to_ilanlar.py` | Format conversion for database import | JSON processing |
-| `db/db_utils.py` | Database utilities, history management | psycopg2, connection pooling |
-| `db/import_to_postgres.py` | Data import to PostgreSQL | psycopg2 |
-| `report-ofe/generator.py` | HTML/PDF report generation | HTML templating |
