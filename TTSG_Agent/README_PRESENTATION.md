@@ -6,18 +6,14 @@
 
 ## 📊 Data Flow At-a-Glance
 
-```
-┌────────────┐     ┌────────────┐     ┌────────────┐     ┌────────────┐
-│  Gov Site  │────▶│    PDFs    │────▶│  Markdown  │────▶│   LLM      │
-│ (CAPTCHA)  │     │            │     │   (OCR)    │     │ Extraction │
-└────────────┘     └────────────┘     └────────────┘     └────────────┘
-                                                               │
-      ┌────────────────────────────────────────────────────────┘
-      ▼
-┌────────────┐     ┌────────────┐     ┌────────────┐
-│ Structured │────▶│ PostgreSQL │────▶│    HTML    │
-│   JSON     │     │  Database  │     │   Report   │
-└────────────┘     └────────────┘     └────────────┘
+```mermaid
+flowchart LR
+    GOV["🌐 Gov Site<br/>(CAPTCHA)"] --> PDF["📄 PDFs"]
+    PDF --> MD["📝 Markdown<br/>(OCR)"]
+    MD --> LLM["🤖 LLM<br/>Extraction"]
+    LLM --> JSON["📊 Structured<br/>JSON"]
+    JSON --> DB[("🗄️ PostgreSQL<br/>Database")]
+    DB --> REPORT["📋 HTML<br/>Report"]
 ```
 
 ---
@@ -233,4 +229,73 @@ flowchart TD
 | LLM Intelligence | GPT-OSS-120B (OpenAI API) |
 | Data Validation | Pydantic |
 
+---
 
+## 🗄️ Database Schema
+
+### Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    GAZETTES ||--o{ ANNOUNCEMENTS : contains
+    CRAWLING_HISTORY ||--o| GAZETTES : tracks
+
+    GAZETTES {
+        int id PK
+        date gazette_date
+        int gazette_number
+        int gazette_page
+        varchar source_file
+        timestamp created_at
+    }
+
+    ANNOUNCEMENTS {
+        int id PK
+        int gazette_id FK
+        varchar registry_office
+        varchar registry_number
+        varchar mersis_no
+        varchar company_name
+        varchar announcement_number
+        varchar announcement_type
+        text company_address
+        date registration_date
+        text changes_summary
+        jsonb content
+        varchar city
+        timestamp created_at
+    }
+
+    CRAWLING_HISTORY {
+        int id PK
+        varchar company_filter
+        varchar city_filter
+        daterange fetched_period
+        timestamp created_at
+    }
+```
+
+### Table Descriptions
+
+| Table | Purpose |
+|-------|---------|
+| `gazettes` | Stores gazette-level metadata (date, number, page) |
+| `announcements` | Individual announcements with company info and extracted fields |
+| `crawling_history` | Tracks previously fetched date ranges to avoid redundant scraping |
+
+### Key Fields in `announcements`
+
+| Field | Description |
+|-------|-------------|
+| `mersis_no` | 16-digit unique company identifier |
+| `company_name` | Full legal company name |
+| `announcement_type` | One of 11 categories (merger, liquidation, etc.) |
+| `content` | JSONB field with type-specific extracted data |
+| `city` | Derived from registry office location |
+
+### 🔌 External Dependencies
+
+| Purpose | Technology |
+|---------|------------|
+| Database | PostgreSQL 15+ |
+| Connection Pooling | psycopg2 |
