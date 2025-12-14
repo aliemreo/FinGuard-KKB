@@ -211,26 +211,10 @@ def process_single_file(args: Tuple[str, str, str]) -> Dict:
     return result
 
 
-def clean_html_file(html_file_path: str, verbose: bool = True) -> Tuple[str, int]:
+def clean_html_file(html_file_path: str, verbose: bool = False) -> Tuple[str, int]:
     cleaner = HTMLCleaner()
-
-    if verbose:
-        print(f"\n{'='*60}\n🧹 HTML CLEANING STARTED\n{'='*60}\nFile: {html_file_path}")
-
-    try:
-        text, lang_code = cleaner.extract_from_html_file(html_file_path)
-
-        if verbose:
-            language = "Turkish" if lang_code == 0 else "English"
-            print(f"✓ Extraction successful\n  - Text length: {len(text)} characters")
-            print(f"  - Language: {language} (code: {lang_code})")
-            print(f"  - Preview: {text[:200]}...\n{'='*60}\n")
-
-        return text, lang_code
-    except Exception as e:
-        if verbose:
-            print(f"✗ Extraction failed: {e}\n{'='*60}\n")
-        raise
+    text, lang_code = cleaner.extract_from_html_file(html_file_path)
+    return text, lang_code
 
 
 if __name__ == "__main__":
@@ -241,58 +225,29 @@ if __name__ == "__main__":
     total_start = time.time()
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"\n{'='*60}\n🚀 BATCH HTML CLEANING (PARALLEL)\n{'='*60}")
-    print(f"Input directory: {os.path.abspath(html_dir)}")
-    print(f"Output directory: {os.path.abspath(output_dir)}")
-    print(f"CPU cores: {max_workers}\n{'='*60}\n")
-
     if not os.path.exists(html_dir):
-        print(f"❌ Error: Input directory not found: {html_dir}")
-        print(f"Current working directory: {os.getcwd()}")
+        print(f"[ERROR] Input directory not found: {html_dir}")
         exit(1)
 
     html_files = [f for f in os.listdir(html_dir) if f.endswith(".html")]
-
     if not html_files:
-        print(f"❌ No HTML files found in {html_dir}")
+        print(f"[ERROR] No HTML files found")
         exit(1)
 
-    print(f"Found {len(html_files)} HTML files to process\n")
-    print(f"⏱️  Processing started at {time.strftime('%H:%M:%S')}\n")
-
+    print(f"Cleaning {len(html_files)} HTML files...")
     process_args = [(f, html_dir, output_dir) for f in html_files]
 
     successful = 0
     failed = 0
-    results = []
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-        future_to_file = {
-            executor.submit(process_single_file, args): args[0] for args in process_args
-        }
-
-        for i, future in enumerate(as_completed(future_to_file), 1):
+        future_to_file = {executor.submit(process_single_file, args): args[0] for args in process_args}
+        for future in as_completed(future_to_file):
             result = future.result()
-            results.append(result)
-
             if result["success"]:
-                print(f"[{i}/{len(html_files)}] ✓ {result['filename']}")
-                print(f"    → {result['output_file']}")
-                print(
-                    f"    Length: {result['text_length']} chars | Language: {result['language']}\n"
-                )
                 successful += 1
             else:
-                print(f"[{i}/{len(html_files)}] ✗ {result['filename']}")
-                print(f"    Error: {result['error']}\n")
                 failed += 1
 
     total_time = time.time() - total_start
-    avg_time = total_time / len(html_files) if html_files else 0
-
-    print(f"{'='*60}\n📊 PROCESSING COMPLETE\n{'='*60}")
-    print(f"✓ Successful: {successful}\n✗ Failed: {failed}")
-    print(f"⏱️  Total time: {total_time:.2f} seconds")
-    print(f"⚡ Average per file: {avg_time:.2f} seconds")
-    print(f"🚀 Speedup: ~{max_workers}x (using {max_workers} cores)")
-    print(f"📁 Output saved to: {os.path.abspath(output_dir)}\n{'='*60}\n")
+    print(f"HTML cleaning complete: {successful}/{len(html_files)} in {total_time:.1f}s")

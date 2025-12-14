@@ -157,8 +157,7 @@ class ImportanceCalculator:
             score = self._estimate_domain_score(domain)
             self.domain_cache[domain] = score
             return score
-        except Exception as e:
-            print(f"  ⚠️ Error calculating importance for {url}: {e}")
+        except:
             return 50
 
     def _estimate_domain_score(self, domain: str) -> int:
@@ -314,20 +313,9 @@ class CurrentNewsSearchEngine:
         self.api_key = config.CURRENTNEWS_API_KEY
         self.base_url = config.CURRENTNEWS_BASE_URL
 
-    def search_currentnews(
-        self,
-        company_name: str,
-        max_results: int = 100,
-        language: str = "tr",
-        start_date: Optional[str] = START_DATE,
-        end_date: Optional[str] = END_DATE,
-    ) -> List[Dict]:
-        print(f"🔍 Searching CurrentNews API for: {company_name}")
-        params = {
-            "keywords": company_name,
-            "apiKey": self.api_key,
-            "language": language,
-        }
+    def search_currentnews(self, company_name: str, max_results: int = 100, language: str = "tr",
+                           start_date: Optional[str] = START_DATE, end_date: Optional[str] = END_DATE) -> List[Dict]:
+        params = {"keywords": company_name, "apiKey": self.api_key, "language": language}
         if start_date:
             params["start_date"] = start_date
         if end_date:
@@ -337,30 +325,14 @@ class CurrentNewsSearchEngine:
             response = requests.get(self.base_url, params=params, timeout=15)
             response.raise_for_status()
             data = response.json()
-
             if data.get("status") != "ok":
-                print(f"  ✗ API Error: {data.get('message', 'Unknown error')}")
                 return []
-
             articles = data.get("news", [])
-            print(f"  ✓ Found {len(articles)} articles from API")
 
-            return [
-                {
-                    "url": a.get("url", ""),
-                    "title": a.get("title", ""),
-                    "snippet": a.get("description", ""),
-                    "source": a.get("author", "currentnews"),
-                    "published_at": a.get("published", ""),
-                    "image": a.get("image", ""),
-                }
-                for a in articles[:max_results]
-            ]
-        except requests.exceptions.RequestException as e:
-            print(f"  ✗ CurrentNews API request failed: {e}")
-            return []
-        except Exception as e:
-            print(f"  ✗ Unexpected error: {e}")
+            return [{"url": a.get("url", ""), "title": a.get("title", ""), "snippet": a.get("description", ""),
+                     "source": a.get("author", "currentnews"), "published_at": a.get("published", ""),
+                     "image": a.get("image", "")} for a in articles[:max_results]]
+        except:
             return []
 
 
@@ -413,10 +385,7 @@ class DuckDuckGoSearchEngine:
             for t in self.config.SEARCH_QUERY_TEMPLATES
         ]
 
-    def search_duckduckgo(
-        self, company_name: str, max_results: int = 30, start_date: Optional[str] = None
-    ) -> List[Dict]:
-        print(f"🔍 Searching DuckDuckGo News for: {company_name}")
+    def search_duckduckgo(self, company_name: str, max_results: int = 30, start_date: Optional[str] = None) -> List[Dict]:
         results = []
         queries = self.build_queries(company_name, start_date=start_date)
         results_per_query = max(5, max_results // len(queries))
@@ -425,34 +394,17 @@ class DuckDuckGoSearchEngine:
             with DDGS() as ddgs:
                 for query in queries:
                     try:
-                        search_results = ddgs.news(
-                            query, max_results=results_per_query, region="tr-tr"
-                        )
+                        search_results = ddgs.news(query, max_results=results_per_query, region="tr-tr")
                         for result in search_results:
                             url = result.get("url", "")
-                            published_date = result.get(
-                                "date", ""
-                            ) or self.date_extractor.extract_date_from_url(url)
-                            results.append(
-                                {
-                                    "url": url,
-                                    "title": result.get("title", ""),
-                                    "snippet": result.get("body", ""),
-                                    "source": "duckduckgo",
-                                    "published_at": published_date or "",
-                                }
-                            )
+                            published_date = result.get("date", "") or self.date_extractor.extract_date_from_url(url)
+                            results.append({"url": url, "title": result.get("title", ""), "snippet": result.get("body", ""),
+                                           "source": "duckduckgo", "published_at": published_date or ""})
                         time.sleep(0.5)
-                    except Exception as e:
-                        print(f"  ⚠️ Query failed: {query[:50]}... - {e}")
+                    except:
                         continue
-
-            dates_found = sum(1 for r in results if r.get("published_at"))
-            print(f"  ✓ Found {len(results)} raw results from DuckDuckGo News")
-            print(f"  📅 Extracted dates from {dates_found}/{len(results)} URLs")
             return results
-        except Exception as e:
-            print(f"  ✗ DuckDuckGo search failed: {e}")
+        except:
             return []
 
 
@@ -478,15 +430,8 @@ class URLExtractor:
         company_name: str,
     ) -> tuple[List[Dict], Dict]:
         filtered_urls = []
-        stats = {
-            "total_found": len(raw_results),
-            "blocked_domains": 0,
-            "blocked_patterns": 0,
-            "not_articles": 0,
-            "duplicates": 0,
-            "kept": 0,
-        }
-        print(f"  🔧 Filtering {source_name} results...")
+        stats = {"total_found": len(raw_results), "blocked_domains": 0, "blocked_patterns": 0,
+                 "not_articles": 0, "duplicates": 0, "kept": 0}
 
         for result in raw_results:
             url, title = result["url"], result.get("title", "")
@@ -549,137 +494,38 @@ class URLExtractor:
         if start_date is None:
             start_date = (datetime.now() - timedelta(days=3 * 365)).strftime("%Y-%m-%d")
 
-        print(f"\n{'='*60}\n📰 HYBRID URL EXTRACTION STARTED\n{'='*60}")
-        print(f"Company: {company_name}\nDate Range: {start_date} to {end_date}")
-        print(f"Language: {language}\nTarget: {target_count} unique articles")
-        print(f"API Threshold: {api_threshold} articles\n")
+        print(f"Searching for {company_name} ({start_date} to {end_date})...")
 
         self.duplicate_detector.reset()
-        api_results = self.currentnews_engine.search_currentnews(
-            company_name,
-            max_results=100,
-            language=language,
-            start_date=start_date,
-            end_date=end_date,
-        )
-        filtered_urls, api_stats = self.filter_and_process_results(
-            api_results, target_count, "CurrentNews API", company_name
-        )
-        print(f"  ✓ API provided {len(filtered_urls)} valid articles")
+        api_results = self.currentnews_engine.search_currentnews(company_name, max_results=100, language=language,
+                                                                  start_date=start_date, end_date=end_date)
+        filtered_urls, api_stats = self.filter_and_process_results(api_results, target_count, "API", company_name)
 
         if len(filtered_urls) < api_threshold:
-            print(
-                f"\n⚠️  API results ({len(filtered_urls)}) below threshold ({api_threshold})"
-            )
-            print(f"🔄 Activating DuckDuckGo fallback...\n")
             remaining_needed = target_count - len(filtered_urls)
-            ddg_results = self.ddg_engine.search_duckduckgo(
-                company_name, max_results=remaining_needed * 3, start_date=start_date
-            )
-            ddg_filtered, ddg_stats = self.filter_and_process_results(
-                ddg_results, remaining_needed, "DuckDuckGo", company_name
-            )
-            print(f"  ✓ DuckDuckGo provided {len(ddg_filtered)} additional articles")
-
+            ddg_results = self.ddg_engine.search_duckduckgo(company_name, max_results=remaining_needed * 3, start_date=start_date)
+            ddg_filtered, ddg_stats = self.filter_and_process_results(ddg_results, remaining_needed, "DDG", company_name)
             filtered_urls.extend(ddg_filtered)
-            combined_stats = {
-                "api_total": api_stats["total_found"],
-                "api_kept": api_stats["kept"],
-                "ddg_total": ddg_stats["total_found"],
-                "ddg_kept": ddg_stats["kept"],
-                "total_found": api_stats["total_found"] + ddg_stats["total_found"],
-                "blocked_domains": api_stats["blocked_domains"]
-                + ddg_stats["blocked_domains"],
-                "blocked_patterns": api_stats["blocked_patterns"]
-                + ddg_stats["blocked_patterns"],
-                "not_articles": api_stats["not_articles"] + ddg_stats["not_articles"],
-                "duplicates": api_stats["duplicates"] + ddg_stats["duplicates"],
-                "kept": api_stats["kept"] + ddg_stats["kept"],
-            }
-        else:
-            print(
-                f"\n✅ API provided sufficient results ({len(filtered_urls)} >= {api_threshold})"
-            )
-            print("📌 DuckDuckGo fallback not needed\n")
-            combined_stats = api_stats
 
         filtered_urls.sort(key=lambda x: x["importance_score"], reverse=True)
         filtered_urls = filtered_urls[:target_count]
 
-        print(f"\n{'='*60}\n📊 EXTRACTION STATISTICS\n{'='*60}")
-        if "api_total" in combined_stats:
-            print(
-                f"API Results:          {combined_stats['api_total']} found, {combined_stats['api_kept']} kept"
-            )
-            print(
-                f"DuckDuckGo Results:   {combined_stats['ddg_total']} found, {combined_stats['ddg_kept']} kept"
-            )
-            print(f"---")
-        print(f"Total found:          {combined_stats['total_found']}")
-        print(f"Blocked domains:      {combined_stats.get('blocked_domains', 0)}")
-        print(f"Blocked patterns:     {combined_stats.get('blocked_patterns', 0)}")
-        print(f"Not articles:         {combined_stats['not_articles']}")
-        print(f"Duplicates removed:   {combined_stats['duplicates']}")
-        print(f"Final count:          {len(filtered_urls)}")
-        print(f"Priority sources:     {sum(1 for u in filtered_urls if u['priority'])}")
-
-        # Check if no URLs found FIRST
-        if not filtered_urls or len(filtered_urls) == 0:
-            print(f"\n{'='*60}\n⚠️  NO ARTICLES FOUND\n{'='*60}")
-            print(f"No news articles found for '{company_name}'")
-            print(f"Date range: {start_date} to {end_date}")
-            print(
-                f"Try:\n  - Expanding the date range\n  - Using a different company name"
-            )
-            print(f"  - Checking if the company has been in the news\n{'='*60}\n")
+        if not filtered_urls:
+            print(f"No articles found for '{company_name}'")
             with open("extracted_urls.json", "w", encoding="utf-8") as f:
                 json.dump([], f)
             return []
 
-        # Calculate importance scores (only if we have results)
-        if filtered_urls:
-            avg_importance = sum(u["importance_score"] for u in filtered_urls) / len(
-                filtered_urls
-            )
-            max_importance = max(u["importance_score"] for u in filtered_urls)
-            min_importance = min(u["importance_score"] for u in filtered_urls)
-            print(
-                f"Importance scores:    avg={avg_importance:.1f}, max={max_importance}, min={min_importance}"
-            )
-        print(f"{'='*60}\n")
-
+        print(f"Found {len(filtered_urls)} articles")
         return filtered_urls
 
     def save_to_json(self, urls: List[Dict], filename: str = "extracted_urls.json"):
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(urls, f, ensure_ascii=False, indent=2)
-        print(f"💾 Saved to {filename}")
 
 
 if __name__ == "__main__":
     extractor = URLExtractor(similarity_threshold=0.75)
-    urls = extractor.extract_urls(
-        company_name=COMPANY_NAME,
-        start_date=START_DATE,
-        end_date=END_DATE,
-        target_count=50,
-        language="tr",
-        api_threshold=50,
-    )
-
-    print("📋 EXTRACTED URLS (sorted by importance):")
-    print("=" * 60)
-    for i, item in enumerate(urls, 1):
-        priority_flag = "⭐" if item["priority"] else "  "
-        source_indicator = "🌐" if item["source"] == "duckduckgo" else "📡"
-        importance_bar = "█" * (item["importance_score"] // 10)
-        print(
-            f"{i:2d}. {priority_flag} {source_indicator} [{importance_bar:10s}] {item['importance_score']:3d}/100"
-        )
-        print(f"     {item['title'][:55]}\n     {item['url']}")
-        print(
-            f"     Source: {item['source']} | Published: {item.get('published_at', 'N/A')}"
-        )
-        print(f"     Domain Score: {item['domain_score']}\n")
-
+    urls = extractor.extract_urls(company_name=COMPANY_NAME, start_date=START_DATE, end_date=END_DATE,
+                                  target_count=50, language="tr", api_threshold=50)
     extractor.save_to_json(urls)

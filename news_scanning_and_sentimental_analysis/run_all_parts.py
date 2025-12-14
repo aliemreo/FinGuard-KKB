@@ -2,6 +2,7 @@ import subprocess
 import os
 import sys
 import json
+import shutil
 from pathlib import Path
 import re
 from datetime import datetime, timedelta
@@ -12,7 +13,7 @@ os.environ["PYTHONIOENCODING"] = "utf-8"
 parser = argparse.ArgumentParser()
 parser.add_argument("--start-date", type=str, required=True)
 parser.add_argument("--end-date", type=str, required=True)
-parser.add_argument("--company", type=str, required=True)
+parser.add_argument("--company-name", type=str, required=True)
 parser.add_argument(
     "--uselocalmodel",
     action="store_true",
@@ -22,16 +23,21 @@ args = parser.parse_args()
 
 START_DATE = datetime.strptime(args.start_date, "%d.%m.%Y")
 END_DATE = datetime.strptime(args.end_date, "%d.%m.%Y")
-COMPANY_NAME = args.company
+COMPANY_NAME = args.company_name
 USE_LOCAL_MODEL = args.uselocalmodel
+
+
+def clear_scraped_data():
+    """Clear the scraped_data folder before starting"""
+    scraped_dir = Path("scraped_data")
+    if scraped_dir.exists():
+        shutil.rmtree(scraped_dir)
+        print("[OK] Cleared scraped_data folder")
+    scraped_dir.mkdir(exist_ok=True)
 
 
 def merge_results():
     """Merge data from all sources into a single JSON file"""
-    print("\n" + "=" * 60)
-    print("📊 MERGING RESULTS")
-    print("=" * 60)
-
     CONFIDENCE_THRESHOLD = 0.60
 
     # Load extracted URLs
@@ -41,24 +47,24 @@ def merge_results():
 
         # Check if empty or no URLs extracted
         if not urls_data or len(urls_data) == 0:
-            print("⚠️  No URLs were extracted from the search")
+            print("[!]  No URLs were extracted from the search")
             return "No news articles found for these constraints"
 
-        print(f"✅ Loaded {len(urls_data)} URLs from extracted_urls.json")
+        print(f"[OK] Loaded {len(urls_data)} URLs from extracted_urls.json")
     except FileNotFoundError:
-        print("❌ extracted_urls.json not found - no URLs were extracted")
+        print("[ERROR] extracted_urls.json not found - no URLs were extracted")
         return "No news articles found for these constraints"
     except Exception as e:
-        print(f"❌ Failed to load extracted_urls.json: {e}")
+        print(f"[ERROR] Failed to load extracted_urls.json: {e}")
         return f"Error loading results: {e}"
 
     # Load sentiment results
     try:
         with open("sentiment_results.json", "r", encoding="utf-8") as f:
             sentiment_data = json.load(f)
-        print(f"✅ Loaded {len(sentiment_data)} sentiment results")
+        print(f"[OK] Loaded {len(sentiment_data)} sentiment results")
     except Exception as e:
-        print(f"❌ Failed to load sentiment_results.json: {e}")
+        print(f"[ERROR] Failed to load sentiment_results.json: {e}")
         return f"Error loading sentiment results: {e}"
 
     # Create sentiment lookup
@@ -70,9 +76,8 @@ def merge_results():
             article_id = int(match.group(1))
             sentiment_lookup[article_id] = item
 
-    print(f"✅ Parsed {len(sentiment_lookup)} sentiment results by ID")
+    print(f"[OK] Parsed {len(sentiment_lookup)} sentiment results by ID")
 
-    screenshots_dir = Path("scraped_data/screenshots")
     cleaned_text_dir = Path("scraped_data/cleaned_text")
 
     merged_results = []
@@ -82,14 +87,6 @@ def merge_results():
 
     for url_item in urls_data:
         article_id = url_item.get("id")
-
-        # Find screenshot
-        screenshot_path = None
-        if screenshots_dir.exists():
-            pattern = f"id_{article_id}_"
-            for screenshot_file in screenshots_dir.glob(f"{pattern}*.png"):
-                screenshot_path = str(screenshot_file.relative_to("."))
-                break
 
         # Find cleaned text and language
         article_text = ""
@@ -107,7 +104,7 @@ def merge_results():
                     with open(text_file, "r", encoding="utf-8") as f:
                         article_text = f.read()
                 except Exception as e:
-                    print(f"⚠️  Failed to read {text_file.name}: {e}")
+                    print(f"[!]  Failed to read {text_file.name}: {e}")
                 break
 
         # Get sentiment
@@ -122,7 +119,6 @@ def merge_results():
                 article_id,
                 url_item.get("url"),
                 url_item.get("title"),
-                screenshot_path,
                 article_text,
                 language,
                 label is not None,
@@ -144,7 +140,6 @@ def merge_results():
                 "url": url_item.get("url"),
                 "title": url_item.get("title"),
                 "published_at": url_item.get("published_at"),
-                "path_to_screenshot": screenshot_path,
                 "article_text": article_text,
                 "language": language,
                 "label": label,
@@ -156,11 +151,7 @@ def merge_results():
 
     # Check if all articles were filtered out
     if len(merged_results) == 0:
-        print(f"\n⚠️  All {len(urls_data)} articles were filtered out during processing")
-        print(
-            "   Reasons: missing screenshots, failed text extraction, or missing sentiment analysis"
-        )
-        return "No news articles found for these constraints (all articles were filtered out during processing)"
+        return "All articles filtered out during processing"
 
     merged_results.sort(key=lambda x: x["id"])
 
@@ -169,22 +160,17 @@ def merge_results():
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(merged_results, f, ensure_ascii=False, indent=2)
-        print(f"\n✅ Successfully merged {len(merged_results)} articles")
-        if skipped_count > 0:
-            print(f"⏭️  Skipped {skipped_count} articles with missing data")
-        print(
-            f"⚠️  {low_confidence_count} articles flagged with low confidence (< {CONFIDENCE_THRESHOLD*100}%)"
-        )
-        if low_confidence_ids:
-            print(f"\n🔍 Articles needing attention (IDs): {low_confidence_ids}")
-        print(f"\n💾 Saved to: {output_file}")
+        print(f"Merged {len(merged_results)} articles")
+        if low_confidence_count > 0:
+            print(f"Low confidence (needs review): {low_confidence_count} articles")
     except Exception as e:
-        print(f"❌ Failed to save merged results: {e}")
         return f"Error saving results: {e}"
 
-    print("=" * 60 + "\n")
-    return None  # Success - no error message
+    return None
 
+
+# Clean up previous run data
+clear_scraped_data()
 
 # Step 1: Run URL extractor
 print("Step 1/4: Extracting URLs...")
@@ -210,7 +196,7 @@ extractor_process = subprocess.Popen(
 extractor_process.communicate()
 
 if extractor_process.returncode != 0:
-    print(f"\n❌ URL extraction failed with return code {extractor_process.returncode}")
+    print(f"\n[ERROR] URL extraction failed with return code {extractor_process.returncode}")
     sys.exit(extractor_process.returncode)
 
 # Check if any URLs were found
@@ -219,17 +205,13 @@ try:
         urls = json.load(f)
 
     if not urls or len(urls) == 0:
-        print(f"\n{'='*60}")
-        print(f"⚠️  NO ARTICLES FOUND - STOPPING PIPELINE")
-        print(f"{'='*60}")
-        print("No news articles were extracted. Skipping remaining steps.")
-        print(f"{'='*60}\n")
-        sys.exit(0)  # Exit gracefully, not an error
+        print("No articles found - stopping pipeline")
+        sys.exit(0)
 except Exception as e:
-    print(f"❌ Could not read extracted_urls.json: {e}")
+    print(f"[ERROR] Could not read URLs: {e}")
     sys.exit(1)
 
-print(f"\n✅ Found {len(urls)} articles, continuing pipeline...\n")
+print(f"Found {len(urls)} articles")
 
 # Step 2-3: Run scraper and html cleaner
 step_2_3_commands = "python scraper.py && python html_cleaner.py"
@@ -244,7 +226,7 @@ process = subprocess.Popen(
 process.communicate()
 
 if process.returncode != 0:
-    print(f"\n❌ Scraper/cleaner failed with return code {process.returncode}")
+    print(f"\n[ERROR] Scraper/cleaner failed with return code {process.returncode}")
     sys.exit(process.returncode)
 
 # Step 4: Run sentiment analysis with arguments
@@ -269,15 +251,10 @@ sentiment_process.communicate()
 if sentiment_process.returncode == 0:
     result = merge_results()
     if result:
-        print(f"\n{'='*60}")
-        print(f"❌ PIPELINE RESULT: {result}")
-        print(f"{'='*60}\n")
+        print(f"Pipeline failed: {result}")
         sys.exit(1)
     else:
-        print(f"\n{'='*60}")
-        print(f"✅ PIPELINE COMPLETED SUCCESSFULLY")
-        print(f"{'='*60}\n")
+        print("Pipeline complete")
 else:
-    print(f"\n❌ Pipeline failed with return code {sentiment_process.returncode}")
-    print("⏭️  Skipping merge step")
+    print(f"Sentiment analysis failed")
     sys.exit(sentiment_process.returncode)

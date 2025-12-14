@@ -1,4 +1,4 @@
-"""News Scraper using Playwright - MAXIMUM SPEED VERSION (STABLE)"""
+"""News Scraper using Playwright"""
 
 import json
 import os
@@ -12,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
 worker_count = 25
-USE_VIEWPORT_ONLY = False
 
 
 class NewsScraper:
@@ -22,19 +21,16 @@ class NewsScraper:
         headless: bool = True,
         timeout: int = 15000,
         max_workers=worker_count,
-        viewport_only: bool = USE_VIEWPORT_ONLY,
     ):
         self.output_dir = Path(output_dir)
         self.headless = headless
         self.timeout = timeout
         self.max_workers = max_workers
-        self.viewport_only = viewport_only
 
-        self.screenshots_dir = self.output_dir / "screenshots"
         self.html_dir = self.output_dir / "html_content"
         self.logs_dir = self.output_dir / "logs"
 
-        for d in [self.screenshots_dir, self.html_dir, self.logs_dir]:
+        for d in [self.html_dir, self.logs_dir]:
             d.mkdir(parents=True, exist_ok=True)
 
         self.errors = []
@@ -48,17 +44,6 @@ class NewsScraper:
             domain = "unknown"
         return f"id_{article_id}_{domain}_{url_hash}"
 
-    def _take_screenshot(self, page: Page, output_path: Path) -> bool:
-        try:
-            page.screenshot(path=str(output_path), full_page=not self.viewport_only)
-            return True
-        except Exception as e:
-            with self.errors_lock:
-                self.errors.append(
-                    f"Screenshot failed for {output_path.name}: {str(e)}"
-                )
-            return False
-
     def _save_html(self, page: Page, output_path: Path) -> bool:
         try:
             with open(output_path, "w", encoding="utf-8") as f:
@@ -66,23 +51,18 @@ class NewsScraper:
             return True
         except Exception as e:
             with self.errors_lock:
-                self.errors.append(f"HTML save failed for {output_path.name}: {str(e)}")
+                self.errors.append(f"HTML save failed: {str(e)[:50]}")
             return False
 
-    def scrape_url(
-        self, url: str, index: int, page: Page, metadata: Dict
-    ) -> Optional[Dict]:
+    def scrape_url(self, url: str, index: int, page: Page, metadata: Dict) -> Optional[Dict]:
         try:
             page.goto(url, timeout=self.timeout, wait_until="commit")
-            page.wait_for_timeout(800)
+            page.wait_for_timeout(500)
 
             filename = self._generate_filename(url, index, metadata.get("id", 0))
-            screenshot_path = self.screenshots_dir / f"{filename}.png"
             html_path = self.html_dir / f"{filename}.html"
 
-            if not self._take_screenshot(page, screenshot_path) or not self._save_html(
-                page, html_path
-            ):
+            if not self._save_html(page, html_path):
                 return None
 
             try:
@@ -96,15 +76,12 @@ class NewsScraper:
                 "title": page_title,
                 "original_title": metadata.get("title", ""),
                 "snippet": metadata.get("snippet", ""),
-                "priority": metadata.get("priority", False),
-                "source": metadata.get("source", "unknown"),
-                "screenshot_path": str(screenshot_path.relative_to(self.output_dir)),
                 "html_path": str(html_path.relative_to(self.output_dir)),
                 "status": "success",
             }
         except Exception as e:
             with self.errors_lock:
-                self.errors.append(f"Scraping failed for {url}: {str(e)}")
+                self.errors.append(f"Scrape failed: {str(e)[:50]}")
             return None
 
     def _scrape_worker_standalone(self, url_data: Dict, total: int) -> Optional[Dict]:
@@ -118,41 +95,21 @@ class NewsScraper:
             with sync_playwright() as p:
                 browser = p.chromium.launch(
                     headless=self.headless,
-                    args=[
-                        "--disable-blink-features=AutomationControlled",
-                        "--disable-dev-shm-usage",
-                        "--no-sandbox",
-                        "--disable-setuid-sandbox",
-                        "--disable-gpu",
-                        "--disable-software-rasterizer",
-                        "--disable-extensions",
-                        "--disable-plugins",
-                        "--disable-web-security",
-                        "--disable-features=IsolateOrigins,site-per-process",
-                        "--disable-default-apps",
-                        "--no-first-run",
-                        "--no-zygote",
-                    ],
+                    args=["--disable-blink-features=AutomationControlled", "--disable-dev-shm-usage", "--no-sandbox"],
                 )
-
                 context = browser.new_context(
                     viewport={"width": 1920, "height": 1080},
-                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
                 )
                 page = context.new_page()
-
-                print(f"[{idx}/{total}] 🔄 Scraping: {url[:70]}...")
                 result = self.scrape_url(url, idx, page, url_data)
-                print(f"           {'✅ Success' if result else '⏭️  Skipped'}")
-
                 page.close()
                 context.close()
                 browser.close()
                 return result
-
         except Exception as e:
             with self.errors_lock:
-                self.errors.append(f"Worker error for {url}: {str(e)}")
+                self.errors.append(f"Worker error: {str(e)[:50]}")
             return None
         finally:
             if browser:
@@ -167,32 +124,23 @@ class NewsScraper:
             with open(json_file, "r", encoding="utf-8") as f:
                 urls_data = json.load(f)
         except Exception as e:
-            print(f"❌ Failed to load {json_file}: {e}")
+            print(f"[ERROR] Failed to load {json_file}: {e}")
             return []
 
         if not urls_data:
-            print("⚠️ No URLs found in JSON file")
+            print("[!] No URLs found")
             return []
 
-        print(f"\n{'='*60}\n🌐 NEWS SCRAPER STARTED (STABLE + FAST)\n{'='*60}")
-        print(
-            f"Total URLs to scrape: {len(urls_data)}\nParallel workers: {self.max_workers}"
-        )
-        print(f"Headless mode: {self.headless}")
-        print(
-            f"Screenshot mode: {'VIEWPORT ONLY (Fast)' if self.viewport_only else 'FULL PAGE (Slow)'}"
-        )
-        print(f"Output directory: {self.output_dir}\n{'='*60}\n")
+        print(f"\nScraping {len(urls_data)} URLs with {self.max_workers} workers...")
 
         results = []
         for idx, url_data in enumerate(urls_data, 1):
             url_data["index"] = idx
 
+        completed = 0
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_url = {
-                executor.submit(
-                    self._scrape_worker_standalone, url_data, len(urls_data)
-                ): url_data
+                executor.submit(self._scrape_worker_standalone, url_data, len(urls_data)): url_data
                 for url_data in urls_data
             }
             for future in as_completed(future_to_url):
@@ -200,9 +148,12 @@ class NewsScraper:
                     result = future.result()
                     if result:
                         results.append(result)
+                    completed += 1
+                    if completed % 5 == 0 or completed == len(urls_data):
+                        print(f"  Progress: {completed}/{len(urls_data)} ({completed*100//len(urls_data)}%)")
                 except Exception as e:
                     with self.errors_lock:
-                        self.errors.append(f"Future error: {str(e)}")
+                        self.errors.append(f"Future error: {str(e)[:50]}")
 
         results.sort(key=lambda x: x["index"])
 
@@ -213,33 +164,17 @@ class NewsScraper:
         if self.errors:
             error_log_file = self.logs_dir / "scraping_errors.log"
             with open(error_log_file, "w", encoding="utf-8") as f:
-                f.write(f"Scraping Error Log - {len(self.errors)} errors\n{'='*60}\n\n")
-                for i, error in enumerate(self.errors, 1):
-                    f.write(f"{i}. {error}\n")
-            print(f"\n⚠️  Error log saved to: {error_log_file}")
+                for error in self.errors:
+                    f.write(f"{error}\n")
 
-        print(f"\n{'='*60}\n📊 SCRAPING COMPLETE\n{'='*60}")
-        print(
-            f"Total attempted: {len(urls_data)}\nSuccessfully scraped: {len(results)}"
-        )
-        print(f"Failed/Skipped: {len(urls_data) - len(results)}")
-        print(f"\n💾 Results saved to: {results_file}")
-        print(f"📸 Screenshots saved to: {self.screenshots_dir}")
-        print(f"📄 HTML files saved to: {self.html_dir}\n{'='*60}\n")
-
-        end_time = time.perf_counter()
-        duration = end_time - start_time
-        avg_time = duration / len(urls_data) if urls_data else 0
-        print(f"\n⏱️  Total time: {duration:.2f} seconds ({duration/60:.2f} minutes)")
-        print(f"⚡ Average per URL: {avg_time:.2f} seconds")
-
+        duration = time.perf_counter() - start_time
+        print(f"Scraping complete: {len(results)}/{len(urls_data)} in {duration:.1f}s")
         return results
 
 
 def main():
     if not os.path.exists("extracted_urls.json"):
-        print("❌ Error: extracted_urls.json not found!")
-        print("   Please run url_extractor.py first to generate URLs.")
+        print("[ERROR] extracted_urls.json not found")
         return
 
     scraper = NewsScraper(
@@ -247,9 +182,8 @@ def main():
         headless=True,
         timeout=15000,
         max_workers=worker_count,
-        viewport_only=USE_VIEWPORT_ONLY,
     )
-    results = scraper.scrape_from_json("extracted_urls.json")
+    scraper.scrape_from_json("extracted_urls.json")
 
 
 if __name__ == "__main__":
