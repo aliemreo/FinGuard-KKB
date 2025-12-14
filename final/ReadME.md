@@ -33,11 +33,12 @@ DB_USER=myusername
 DB_PASSWORD=mypassword
 ```
 Terminal:
-
+```
 docker-compose up -d --build
 
 docker exec -it ihale_container_final bash
-
+```
 Konteyner içerisindeyken:
-
+```
 python pipeline.py --mode all --start-date 2024-07-20 --end-date 2024-07-20
+```
