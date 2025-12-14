@@ -26,10 +26,10 @@ This schema shows the high-level flow from user input to final database storage 
 flowchart TB
     subgraph INPUT["🎯 User Input"]
         direction LR
-        CLI["Command Line<br/>Office, Company<br/>Date Range"]
+        CLI["Office, Company<br/>Date Range"]
     end
 
-    subgraph ORCHESTRATOR["🧠 Central Orchestrator"]
+    subgraph ORCHESTRATOR["Orchestrator"]
         direction TB
         HISTORY["Check History<br/>(Gap Detection)"]
         LOOP["Process Each Gap"]
@@ -117,7 +117,7 @@ flowchart TD
 
 ---
 
-## 🌐 Schema 3: Web Acquisition (Minimal)
+## 🌐 Schema 3: Web Scraping
 
 A simplified view of the web scraping authentication and download process.
 
@@ -157,7 +157,7 @@ flowchart LR
 
 ---
 
-## 🤖 Schema 4: Agentic Batch Processor (`batch_process_gazettes.py`)
+## 🤖 Schema 4: Agentic Processor (`batch_process_gazettes.py`)
 
 This is the **core intelligence layer** — a multi-stage LLM-powered extraction pipeline.
 
@@ -237,23 +237,11 @@ flowchart TD
 
 ```mermaid
 erDiagram
-    GAZETTES ||--o{ ANNOUNCEMENTS : contains
-    CRAWLING_HISTORY ||--o| GAZETTES : tracks
-
-    GAZETTES {
-        int id PK
-        date gazette_date
-        int gazette_number
-        int gazette_page
-        varchar source_file
-        timestamp created_at
-    }
+    CRAWLING_HISTORY ||--o{ ANNOUNCEMENTS : "tracks coverage"
 
     ANNOUNCEMENTS {
         int id PK
-        int gazette_id FK
         varchar registry_office
-        varchar registry_number
         varchar mersis_no
         varchar company_name
         varchar announcement_number
@@ -263,7 +251,6 @@ erDiagram
         text changes_summary
         jsonb content
         varchar city
-        timestamp created_at
     }
 
     CRAWLING_HISTORY {
@@ -271,7 +258,6 @@ erDiagram
         varchar company_filter
         varchar city_filter
         daterange fetched_period
-        timestamp created_at
     }
 ```
 
@@ -279,7 +265,6 @@ erDiagram
 
 | Table | Purpose |
 |-------|---------|
-| `gazettes` | Stores gazette-level metadata (date, number, page) |
 | `announcements` | Individual announcements with company info and extracted fields |
 | `crawling_history` | Tracks previously fetched date ranges to avoid redundant scraping |
 

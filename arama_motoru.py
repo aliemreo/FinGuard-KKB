@@ -14,9 +14,10 @@ load_dotenv()
 
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
-    "database": os.getenv("DB_NAME", "ihale_db"),
-    "user": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "lolzedcr7")
+    "port": os.getenv("DB_PORT", "5435"),
+    "database": os.getenv("DB_NAME", "kkb_db"),
+    "user": os.getenv("DB_USER", "kkb_user"),
+    "password": os.getenv("DB_PASSWORD", "password123")
 }
 
 def baglanti_kur():
