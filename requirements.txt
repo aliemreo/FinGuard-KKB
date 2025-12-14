@@ -1,0 +1,44 @@
+# Core dependencies for TTSG_Agent/app.py pipeline
+# Python 3.8+
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+
+# Database
+psycopg2-binary>=2.9.0
+
+# Web Scraping & Automation
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+requests>=2.31.0
+
+# Image Processing & OCR
+Pillow>=10.0.0
+pytesseract>=0.3.10
+opencv-python>=4.8.0
+
+# PDF Processing
+pymupdf>=1.23.0
+
+# AI/LLM
+openai>=1.0.0
+ollama>=0.1.0
+
+# Data Processing & Validation
+pydantic>=2.0.0
+rapidfuzz>=3.0.0
+numpy>=1.24.0
+
+# Report Generation
+jinja2>=3.1.0
+pdfkit>=1.0.0
+
+# Note: pdfkit requires wkhtmltopdf to be installed separately
+# - Windows: Download from https://wkhtmltopdf.org/downloads.html
+# - Linux/Docker: apt-get install -y wkhtmltopdf
+# - macOS: brew install wkhtmltopdf
+
+# Note: pytesseract requires Tesseract OCR to be installed separately
+# - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+# - Linux: apt-get install -y tesseract-ocr tesseract-ocr-tur
+# - macOS: brew install tesseract
