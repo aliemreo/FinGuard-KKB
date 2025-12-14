@@ -84,7 +84,7 @@ graph LR
 **Teknik Detaylar:**
 - 🚀 **25x paralellik** (concurrent browsing)
 - 🎭 Playwright (modern automation)
-- ⚡ ~2 dakikada 50 makale
+- ⚡ ~20 saniyede 50 makale
 - 🛡️ Error handling + retry logic
 
 ---
