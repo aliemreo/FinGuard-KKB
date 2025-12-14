@@ -22,7 +22,7 @@ CREATE TABLE ilanlar (
     mersis_no VARCHAR(16),
     unvan VARCHAR(500) NOT NULL,
     sirket_sorgusu VARCHAR(500) NOT NULL,
-    il SMALLINT NOT NULL,                 -- Plaka kodu (1-81)
+    il VARCHAR(50) NOT NULL,              -- Şehir adı
     adres TEXT,
     tescil_tarihi DATE,
     gazete_tarihi DATE,                   -- Ana sıralama bu alana göre yapılacak
@@ -44,7 +44,7 @@ DROP TABLE IF EXISTS crawling_history CASCADE;
 CREATE TABLE crawling_history (
     id SERIAL PRIMARY KEY,
     sirket_sorgusu VARCHAR(500) NOT NULL,  -- yapılan sorguda kullanılan şirket ismi
-    il SMALLINT NOT NULL,                  -- şehir kodu (matches ilanlar.il, 1-81)
+    il VARCHAR(50) NOT NULL,               -- şehir adı (matches ilanlar.il)
     fetched_period DATERANGE NOT NULL,     -- The date range that was successfully scraped
     CONSTRAINT valid_period CHECK (NOT isempty(fetched_period))
 );

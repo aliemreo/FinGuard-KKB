@@ -20,7 +20,7 @@ data_buckets = {"ihale": [], "sicil": [], "news": []}
 
 FILES = {
     "ihale": "ihale.json",
-    "sicil": "sicil.json",
+    "sicil": "../db/db_Input/ilanlar.json",  # Uses TTSG_Agent output
     "news": "news.json",
 }
 
@@ -174,9 +174,22 @@ for item in data_buckets["sicil"]:
     registered_matters = []
     det = item.get("detaylar", {})
     if det and det.get("registered_matters"):
-        registered_matters = det["registered_matters"]
+        rm = det["registered_matters"]
+        # Ensure it's always a list (not a string that gets iterated char-by-char)
+        if isinstance(rm, str):
+            registered_matters = [rm]
+        elif isinstance(rm, list):
+            registered_matters = rm
+        else:
+            registered_matters = [str(rm)]
     elif item.get("registered_matters"):
-        registered_matters = item["registered_matters"]
+        rm = item["registered_matters"]
+        if isinstance(rm, str):
+            registered_matters = [rm]
+        elif isinstance(rm, list):
+            registered_matters = rm
+        else:
+            registered_matters = [str(rm)]
 
     # Build details from detaylar field
     details_parts = []
@@ -194,25 +207,51 @@ for item in data_buckets["sicil"]:
         if det.get("shareholders"):
             details_parts.append(f"Pay Sahipleri: {stringify_value(det['shareholders'])}")
         
-        # Handle notary_info as formatted list
-        notary_info = det.get("notary_info", [])
-        if notary_info and isinstance(notary_info, list):
-            notary_texts = []
-            for n in notary_info:
-                if isinstance(n, dict):
-                    parts = []
-                    if n.get("notary"):
-                        parts.append(n["notary"])
-                    if n.get("date"):
-                        parts.append(n["date"])
-                    if n.get("document_number"):
-                        parts.append(f"No: {n['document_number']}")
-                    if n.get("description"):
-                        parts.append(n["description"])
-                    if parts:
-                        notary_texts.append(" - ".join(parts))
-            if notary_texts:
-                details_parts.append("Noter: " + " | ".join(notary_texts))
+        # Handle notary_info - can be string, dict, or list
+        notary_info = det.get("notary_info")
+        if notary_info:
+            if isinstance(notary_info, str):
+                # Direct string format: "Ankara | Nt Nin 18.7.2025 Tarih 5188 Sayı İle Tasdikli"
+                details_parts.append(f"Noter: {notary_info}")
+            elif isinstance(notary_info, dict):
+                # Single dict format: {"date": "...", "number": "...", "notary_office": "..."}
+                parts = []
+                if notary_info.get("notary_office"):
+                    parts.append(notary_info["notary_office"])
+                if notary_info.get("notary"):
+                    parts.append(notary_info["notary"])
+                if notary_info.get("date"):
+                    parts.append(notary_info["date"])
+                if notary_info.get("number"):
+                    parts.append(f"No: {notary_info['number']}")
+                if notary_info.get("document_number"):
+                    parts.append(f"No: {notary_info['document_number']}")
+                if notary_info.get("description"):
+                    parts.append(notary_info["description"])
+                if parts:
+                    details_parts.append("Noter: " + " - ".join(parts))
+            elif isinstance(notary_info, list):
+                # List of dicts format
+                notary_texts = []
+                for n in notary_info:
+                    if isinstance(n, dict):
+                        parts = []
+                        if n.get("notary_office"):
+                            parts.append(n["notary_office"])
+                        if n.get("notary"):
+                            parts.append(n["notary"])
+                        if n.get("date"):
+                            parts.append(n["date"])
+                        if n.get("document_number"):
+                            parts.append(f"No: {n['document_number']}")
+                        if n.get("number"):
+                            parts.append(f"No: {n['number']}")
+                        if n.get("description"):
+                            parts.append(n["description"])
+                        if parts:
+                            notary_texts.append(" - ".join(parts))
+                if notary_texts:
+                    details_parts.append("Noter: " + " | ".join(notary_texts))
 
     processed_report["sicil_items"].append(
         {

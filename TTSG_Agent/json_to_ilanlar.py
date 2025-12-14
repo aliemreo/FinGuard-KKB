@@ -13,7 +13,7 @@ Key handling:
 
 Field mappings:
 - ilan_no ← metadata.announcement_number
-- il ← filter_settings.city_filter (converted to plaka code)
+- il ← filter_settings.city_filter (city name as string)
 - adres ← metadata.address
 - metin ← raw_text
 - detaylar ← content (entire object or sub-announcement)
@@ -25,33 +25,6 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-
-# ============================================================================
-# CITY MAPPING (Turkish city names to plaka codes)
-# ============================================================================
-
-CITY_TO_PLAKA = {
-    "ADANA": 1, "ADIYAMAN": 2, "AFYONKARAHİSAR": 3, "AĞRI": 4, "AMASYA": 5,
-    "ANKARA": 6, "ANTALYA": 7, "ARTVİN": 8, "AYDIN": 9, "BALIKESİR": 10,
-    "BİLECİK": 11, "BİNGÖL": 12, "BİTLİS": 13, "BOLU": 14, "BURDUR": 15,
-    "BURSA": 16, "ÇANAKKALE": 17, "ÇANKIRI": 18, "ÇORUM": 19, "DENİZLİ": 20,
-    "DİYARBAKIR": 21, "EDİRNE": 22, "ELAZIĞ": 23, "ERZİNCAN": 24, "ERZURUM": 25,
-    "ESKİŞEHİR": 26, "GAZİANTEP": 27, "GİRESUN": 28, "GÜMÜŞHANE": 29, "HAKKARİ": 30,
-    "HATAY": 31, "ISPARTA": 32, "MERSİN": 33, "İSTANBUL": 34, "İZMİR": 35,
-    "KARS": 36, "KASTAMONU": 37, "KAYSERİ": 38, "KIRKLARELİ": 39, "KIRŞEHİR": 40,
-    "KOCAELİ": 41, "KONYA": 42, "KÜTAHYA": 43, "MALATYA": 44, "MANİSA": 45,
-    "KAHRAMANMARAŞ": 46, "MARDİN": 47, "MUĞLA": 48, "MUŞ": 49, "NEVŞEHİR": 50,
-    "NİĞDE": 51, "ORDU": 52, "RİZE": 53, "SAKARYA": 54, "SAMSUN": 55,
-    "SİİRT": 56, "SİNOP": 57, "SİVAS": 58, "TEKİRDAĞ": 59, "TOKAT": 60,
-    "TRABZON": 61, "TUNCELİ": 62, "ŞANLIURFA": 63, "UŞAK": 64, "VAN": 65,
-    "YOZGAT": 66, "ZONGULDAK": 67, "AKSARAY": 68, "BAYBURT": 69, "KARAMAN": 70,
-    "KIRIKKALE": 71, "BATMAN": 72, "ŞIRNAK": 73, "BARTIN": 74, "ARDAHAN": 75,
-    "IĞDIR": 76, "YALOVA": 77, "KARABÜK": 78, "KİLİS": 79, "OSMANİYE": 80,
-    "DÜZCE": 81,
-    # Common variations
-    "AFYON": 3, "URFA": 63, "ANTEP": 27, "MARAS": 46, "IÇEL": 33,
-    "ISTANBUL": 34, "IZMIR": 35,  # Without Turkish chars
-}
 
 # ============================================================================
 # ANNOUNCEMENT TYPE MAPPING (string → integer for database)
@@ -70,25 +43,6 @@ ILAN_TURU_MAP = {
     "sermaye_taahhüdü": 10,
     "şirket_emtiası_satışı": 11,
 }
-
-
-def city_filter_to_plaka(city_filter: str) -> Optional[int]:
-    """Convert city filter string to plaka code."""
-    if not city_filter:
-        return None
-    
-    city_upper = city_filter.upper().strip()
-    
-    # Direct lookup
-    if city_upper in CITY_TO_PLAKA:
-        return CITY_TO_PLAKA[city_upper]
-    
-    # Try partial matching
-    for city, plaka in CITY_TO_PLAKA.items():
-        if city in city_upper or city_upper in city:
-            return plaka
-    
-    return None
 
 
 def parse_turkish_date(date_str: str) -> Optional[str]:
@@ -140,10 +94,10 @@ def process_announcement(
     gazette_date = parse_turkish_date(gazette_metadata.get('date'))
     gazette_number = gazette_metadata.get('number')
     
-    # Get city from filter_settings
-    city_plaka = None
+    # Get city from filter_settings (as string, not plaka code)
+    city_name = None
     if filter_settings and filter_settings.get('city_filter'):
-        city_plaka = city_filter_to_plaka(filter_settings['city_filter'])
+        city_name = filter_settings['city_filter'].strip()
     
     # Check if this is a compound announcement with sub-announcements array
     # (Structure 1: content.announcements[])
@@ -163,7 +117,7 @@ def process_announcement(
                 "eski_unvan": metadata.get('old_company_name'),  # From metadata.old_company_name
                 "sirket_sorgusu": filter_settings.get('company_filter') if filter_settings else None,
                 "sicil_mudurluk": metadata.get('registry_office') if metadata.get('registry_office') != 'Unknown' else None,
-                "il": city_plaka,  # From filter_settings.city_filter
+                "il": city_name,  # From filter_settings.city_filter (as string)
                 "adres": metadata.get('address'),  # From metadata.address
                 "gazete_tarihi": gazette_date,
                 "gazete_sayisi": str(gazette_number) if gazette_number else None,
@@ -184,7 +138,7 @@ def process_announcement(
             "eski_unvan": metadata.get('old_company_name'),  # From metadata.old_company_name
             "sirket_sorgusu": filter_settings.get('company_filter') if filter_settings else None,
             "sicil_mudurluk": metadata.get('registry_office') if metadata.get('registry_office') != 'Unknown' else None,
-            "il": city_plaka,  # From filter_settings.city_filter
+            "il": city_name,  # From filter_settings.city_filter (as string)
             "adres": metadata.get('address'),  # From metadata.address
             "gazete_tarihi": gazette_date,
             "gazete_sayisi": str(gazette_number) if gazette_number else None,
@@ -217,10 +171,10 @@ def process_json_file(json_path: Path) -> List[dict]:
         gazette_date = parse_turkish_date(gazette_metadata.get('date'))
         gazette_number = gazette_metadata.get('number')
         
-        # Get city from filter_settings
-        city_plaka = None
+        # Get city from filter_settings (as string)
+        city_name = None
         if filter_settings and filter_settings.get('city_filter'):
-            city_plaka = city_filter_to_plaka(filter_settings['city_filter'])
+            city_name = filter_settings['city_filter'].strip()
         
         # Create placeholder entry with null values (only date/number preserved)
         entry = {
@@ -232,7 +186,7 @@ def process_json_file(json_path: Path) -> List[dict]:
             "eski_unvan": None,
             "sirket_sorgusu": filter_settings.get('company_filter') if filter_settings else None,
             "sicil_mudurluk": None,
-            "il": city_plaka,
+            "il": city_name,
             "adres": None,
             "gazete_tarihi": gazette_date,
             "gazete_sayisi": str(gazette_number) if gazette_number else None,
