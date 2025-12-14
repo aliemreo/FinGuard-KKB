@@ -1,0 +1,25 @@
+# 1. Baz İmaj (Senin istediğin)
+FROM ozcanal22/my-paddleocr-normal:v1
+
+# 2. Yetki sorununu çözmek için ROOT kullanıcısına geçiyoruz
+USER root
+
+# 3. Çalışma Dizini
+WORKDIR /workspace
+
+# 4. Sistem Kütüphaneleri (Tesseract, Poppler, OpenCV, Postgres Driver)
+# "rm -rf" kısmı imajı temiz tutar.
+RUN apt-get update && apt-get install -y \
+    poppler-utils \
+    tesseract-ocr \
+    tesseract-ocr-tur \
+    libgl1 \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 5. Python Kütüphanelerini Kur
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 6. Container sürekli açık kalsın diye bash başlatıyoruz
+CMD ["/bin/bash"]
