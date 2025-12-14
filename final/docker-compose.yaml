@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # --- SERVİS 1: SENİN PYTHON UYGULAMAN ---
   ihale-app:
     build: .
     image: ihale-projesi:v2
@@ -23,12 +22,12 @@ services:
     # Dosyaları içeri bağla
     volumes:
       - .:/workspace
-    # Environment değişkeni olarak DB bilgisini geçelim (Opsiyonel ama iyi pratik)
+    # Environment değişkeni olarak DB bilgisini geçelim
     environment:
       - DB_HOST=db
       - DB_NAME=ihale_db
-      - DB_USER=postgres
-      - DB_PASS=lolzedcr7
+      - DB_USER=myusername
+      - DB_PASS=mypassword
 
   # --- SERVİS 2: POSTGRESQL VERİTABANI ---
   db:
@@ -36,8 +35,8 @@ services:
     container_name: ihale_db_server
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: lolzedcr7
+      POSTGRES_USER: myusername
+      POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: ihale_db
     volumes:
       # Veritabanı verileri kaybolmasın diye Docker volume
@@ -50,4 +49,5 @@ services:
 
 # Verilerin saklanacağı depo
 volumes:
+
   pgdata:
