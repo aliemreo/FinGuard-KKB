@@ -4,24 +4,23 @@ import argparse
 from datetime import datetime
 from jinja2 import Template
 
-# ==========================================
-# 0. ARGUMENT PARSING
-# ==========================================
+# ARGUMENT PARSING
+
 parser = argparse.ArgumentParser(description="Generate FinGuard Intelligence Report")
-parser.add_argument("--start-date", type=str, default="", help="Start date (dd.mm.yyyy)")
+parser.add_argument(
+    "--start-date", type=str, default="", help="Start date (dd.mm.yyyy)"
+)
 parser.add_argument("--end-date", type=str, default="", help="End date (dd.mm.yyyy)")
 parser.add_argument("--company-name", type=str, default="", help="Company name")
 args = parser.parse_args()
 
-# ==========================================
-# 1. CONFIGURATION & DATA LOADING
-# ==========================================
+# CONFIGURATION & DATA LOADING
 data_buckets = {"ihale": [], "sicil": [], "news": []}
 
 FILES = {
     "ihale": "ihale.json",
     "sicil": "../db/db_Input/ilanlar.json",  # Uses TTSG_Agent output
-    "news": "news.json",
+    "news": "../news_scanning_and_sentimental_analysis/merged_results.json",
 }
 
 
@@ -47,9 +46,6 @@ for key, filepath in FILES.items():
         data_buckets[key].append(data)
 
 
-# ==========================================
-# 2. HELPER FUNCTIONS
-# ==========================================
 def format_date(date_str):
     """Converts various date formats to dd.mm.yyyy"""
     if not date_str:
@@ -99,30 +95,29 @@ def stringify_value(val):
         return str(val)
     if isinstance(val, dict):
         # Extract meaningful fields from common dict types
-        if 'name' in val:
-            return val['name']
-        if 'total_capital_TL' in val:
+        if "name" in val:
+            return val["name"]
+        if "total_capital_TL" in val:
             parts = []
-            if val.get('total_shares'):
+            if val.get("total_shares"):
                 parts.append(f"{val['total_shares']} pay")
-            if val.get('total_capital_TL'):
+            if val.get("total_capital_TL"):
                 parts.append(f"{val['total_capital_TL']:,.0f} TL")
-            return ', '.join(parts) if parts else str(val)
+            return ", ".join(parts) if parts else str(val)
         # Generic dict: show key=value pairs for simple values only
         simple_parts = []
         for k, v in val.items():
             if isinstance(v, (str, int, float)) and v:
                 simple_parts.append(f"{k}: {v}")
-        return ', '.join(simple_parts) if simple_parts else ""
+        return ", ".join(simple_parts) if simple_parts else ""
     if isinstance(val, list):
         items = [stringify_value(item) for item in val if stringify_value(item)]
-        return ', '.join(items)
+        return ", ".join(items)
     return str(val)
 
 
-# ==========================================
-# 3. PROCESSORS
-# ==========================================
+# PROCESSORS
+
 processed_report = {"sicil_items": [], "news_items": [], "ihale_items": []}
 
 # Track date ranges for report header
@@ -150,6 +145,7 @@ for item in data_buckets["news"]:
             "confidence": f"{item.get('confidence', 0) * 100:.1f}%",
             "summary": summary_text,
             "url": item.get("url", "#"),
+            "needs_attention": item.get("needs_attention", False),
         }
     )
 
@@ -163,7 +159,7 @@ for item in data_buckets["sicil"]:
     )
     if date_val:
         all_dates.append(date_val)
-    
+
     company = item.get("unvan") or item.get("company_name", "-")
     address = item.get("adres") or item.get("new_address", "-")
     ilan_no = item.get("ilan_no", "-")
@@ -204,10 +200,14 @@ for item in data_buckets["sicil"]:
         if det.get("old_capital"):
             details_parts.append(f"Eski Sermaye: {det['old_capital']}")
         if det.get("capital_breakdown"):
-            details_parts.append(f"Sermaye: {stringify_value(det['capital_breakdown'])}")
+            details_parts.append(
+                f"Sermaye: {stringify_value(det['capital_breakdown'])}"
+            )
         if det.get("shareholders"):
-            details_parts.append(f"Pay Sahipleri: {stringify_value(det['shareholders'])}")
-        
+            details_parts.append(
+                f"Pay Sahipleri: {stringify_value(det['shareholders'])}"
+            )
+
         # Handle notary_info - can be string, dict, or list
         notary_info = det.get("notary_info")
         if notary_info:
@@ -268,7 +268,9 @@ for item in data_buckets["sicil"]:
             "registered_matters": registered_matters,
             "details": " • ".join(details_parts) if details_parts else "",
             "summary": det.get("summary"),  # Extract summary
-            "raw_json_content": json.dumps(det, indent=2, ensure_ascii=False) if det else "{}"
+            "raw_json_content": (
+                json.dumps(det, indent=2, ensure_ascii=False) if det else "{}"
+            ),
         }
     )
 
@@ -322,9 +324,9 @@ if all_dates:
 else:
     min_date = max_date = "-"
 
-# ==========================================
-# 4. HTML TEMPLATE
-# ==========================================
+
+# HTML TEMPLATE
+
 html_template = """
 <!DOCTYPE html>
 <html lang="tr">
@@ -382,20 +384,23 @@ html_template = """
             flex-wrap: wrap;
         }
         .main-header .report-period {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            color: #ffffff;
+            display: inline-block;
+            width: fit-content;
+            background: #1e40af !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color: #ffffff !important;
             padding: 0.6rem 1.5rem;
             border-radius: 50px;
             font-size: 0.9rem;
             font-weight: 600;
         }
         .main-header .report-date {
-            color: #64748b;
+            color: #334155 !important;
             font-size: 0.85rem;
             font-weight: 500;
+            display: block;
+            margin-top: 0.75rem;
         }
         
         .section-title { 
@@ -431,15 +436,19 @@ html_template = """
 
         .badge {
             display: inline-block; 
-            padding: 2px 10px; 
+            padding: 4px 12px; 
             border-radius: 9999px;
             font-size: 0.75rem; 
             font-weight: 700; 
             text-transform: uppercase;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
-        .badge-positive { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
-        .badge-negative { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-        .badge-neutral { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+        .badge-positive { background: #dcfce7 !important; color: #166534 !important; border: 1px solid #86efac; }
+        .badge-negative { background: #fee2e2 !important; color: #991b1b !important; border: 1px solid #fca5a5; }
+        .badge-neutral { background: #f3f4f6 !important; color: #374151 !important; border: 1px solid #d1d5db; }
         
         .matter-badge {
             display: inline-block;
@@ -539,7 +548,6 @@ html_template = """
         <div class="company-name">{{ company_name }}</div>
         <div class="report-info">
             <div class="report-period">
-                <span>📅</span>
                 <span>{{ start_date }} — {{ end_date }}</span>
             </div>
             <div class="report-date">Oluşturulma: {{ current_date }}</div>
@@ -548,7 +556,7 @@ html_template = """
 
     <!-- IHALE (TENDER BANS) SECTION - FIRST -->
     <div class="section-title">
-        <span>🚫 Kamu İhale Yasaklıları</span>
+        <span>KAMU IHALE YASAKLILARI</span>
     </div>
 
     {% if ihale_items %}
@@ -614,7 +622,7 @@ html_template = """
 
     <!-- SICIL (TRADE REGISTRY) SECTION - SECOND -->
     <div class="section-title" style="page-break-before: always;">
-        <span>🏛️ Ticaret Sicil İlanları</span>
+        <span>TICARET SICIL ILANLARI</span>
     </div>
 
     {% if sicil_items %}
@@ -689,27 +697,32 @@ html_template = """
 
     <!-- NEWS SECTION - THIRD -->
     <div class="section-title" style="page-break-before: always;">
-        <span>📰 Piyasa Haberleri & Duyarlılık Analizi</span>
+        <span>PIYASA HABERLERI & DUYARLILIK ANALIZI</span>
     </div>
 
     {% if news_items %}
         {% for item in news_items %}
         <div class="card">
             <div class="card-content">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <div>
-                        <span class="meta-tag">{{ item.source }}</span>
-                        <span class="date" style="margin-left:8px;">{{ item.date }}</span>
-                        <h3 style="margin: 8px 0; font-size:1.1rem;">{{ item.title }}</h3>
-                    </div>
-                    <span class="badge badge-{{ item.sentiment }}">
-                        {{ item.sentiment }} ({{ item.confidence }})
-                    </span>
-                </div>
+                <table style="width:100%; border-collapse:collapse; border:none;">
+                    <tr>
+                        <td style="vertical-align:top; border:none; padding:0;">
+                            <span class="meta-tag">{{ item.source }}</span>
+                            <span class="date" style="margin-left:8px;">{{ item.date }}</span>
+                            <h3 style="margin: 8px 0; font-size:1.1rem;">{{ item.title }}</h3>
+                        </td>
+                        <td style="vertical-align:top; text-align:right; width:150px; border:none; padding:0;">
+                            {% if item.needs_attention %}<span style="color:#dc2626; font-weight:bold; margin-right:4px;" title="Low confidence - needs review">!</span>{% endif %}
+                            <span class="badge badge-{{ item.sentiment }}">
+                                {{ item.sentiment }} ({{ item.confidence }})
+                            </span>
+                        </td>
+                    </tr>
+                </table>
                 <p style="color:#334155; font-size:0.95rem; line-height:1.6; margin-top:10px;">
                     {{ item.summary }}
                 </p>
-                <a href="{{ item.url }}" class="button" target="_blank">Orijinal Makaleyi Oku →</a>
+                <a href="{{ item.url }}" class="button" target="_blank">Orijinal Makaleyi Oku</a>
             </div>
         </div>
         {% endfor %}
@@ -727,7 +740,9 @@ html_template = """
 template = Template(html_template)
 
 # Use CLI args if provided, otherwise fall back to calculated dates
-report_company = args.company_name if args.company_name else "Şirket Bilgisi Belirtilmedi"
+report_company = (
+    args.company_name if args.company_name else "Şirket Bilgisi Belirtilmedi"
+)
 report_start = args.start_date if args.start_date else min_date
 report_end = args.end_date if args.end_date else max_date
 
@@ -751,23 +766,25 @@ try:
     print(
         f"   📊 İstatistikler: {len(processed_report['ihale_items'])} İhale, {len(processed_report['sicil_items'])} Sicil, {len(processed_report['news_items'])} Haber"
     )
-    
+
     # Generate PDF using pdfkit (requires wkhtmltopdf installed)
     # In Docker: apt-get install -y wkhtmltopdf
     try:
         import pdfkit
         import shutil
-        
+
         # Find wkhtmltopdf - works on Linux (Docker) and Windows
-        wkhtmltopdf_path = shutil.which('wkhtmltopdf')
+        wkhtmltopdf_path = shutil.which("wkhtmltopdf")
         if not wkhtmltopdf_path:
             # Try common Windows paths
-            for path in [r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe',
-                        r'C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe']:
+            for path in [
+                r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe",
+                r"C:\Program Files (x86)\wkhtmltopdf\bin\wkhtmltopdf.exe",
+            ]:
                 if os.path.exists(path):
                     wkhtmltopdf_path = path
                     break
-        
+
         if wkhtmltopdf_path:
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
             pdfkit.from_file(output_filename, pdf_filename, configuration=config)
