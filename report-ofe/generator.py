@@ -19,7 +19,7 @@ data_buckets = {"ihale": [], "sicil": [], "news": []}
 
 FILES = {
     "ihale": "ihale.json",
-    "sicil": "../db/db_Input/ilanlar.json",  # Uses TTSG_Agent output
+    "sicil": "sicil.json",
     "news": "../news_scanning_and_sentimental_analysis/merged_results.json",
 }
 

@@ -49,6 +49,33 @@ class TicaretSicilLogin:
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
 
+        # Try to find Chrome binary on Windows
+        import platform
+        if platform.system() == 'Windows':
+            possible_chrome_paths = [
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+                os.path.expandvars(r"%PROGRAMFILES%\Google\Chrome\Application\chrome.exe"),
+                os.path.expandvars(r"%PROGRAMFILES(X86)%\Google\Chrome\Application\chrome.exe"),
+            ]
+            
+            chrome_found = False
+            for chrome_path in possible_chrome_paths:
+                if os.path.exists(chrome_path):
+                    options.binary_location = chrome_path
+                    print(f"Found Chrome at: {chrome_path}")
+                    chrome_found = True
+                    break
+            
+            if not chrome_found:
+                print("\nERROR: Chrome browser not found!")
+                print("Please install Google Chrome from: https://www.google.com/chrome/")
+                print("\nSearched locations:")
+                for path in possible_chrome_paths:
+                    print(f"  - {path}")
+                raise FileNotFoundError("Chrome browser not found. Please install Google Chrome.")
+
         # Configure PDF auto-download
         # Create output directory if it doesn't exist
         os.makedirs(self.pdf_output_dir, exist_ok=True)
@@ -58,8 +85,7 @@ class TicaretSicilLogin:
             "download.default_directory": self.pdf_output_dir,
             "download.prompt_for_download": False,
             "plugins.always_open_pdf_externally": True,  # Download instead of opening in browser
-            "download.directory"
-            "_upgrade": True,
+            "download.directory_upgrade": True,
             "safebrowsing.enabled": True,
             "profile.default_content_settings.popups": 0,
             "download.extensions_to_open": "",
@@ -74,9 +100,18 @@ class TicaretSicilLogin:
         options.add_argument('--no-sandbox')
 
         # Automatically download and use the correct ChromeDriver version
-        service = Service(ChromeDriverManager().install())
-        self.driver = webdriver.Chrome(service=service, options=options)
-        self.driver.maximize_window()
+        try:
+            service = Service(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(service=service, options=options)
+            self.driver.maximize_window()
+            print("Chrome WebDriver initialized successfully")
+        except Exception as e:
+            print(f"\nERROR: Failed to initialize Chrome WebDriver: {str(e)}")
+            print("\nTroubleshooting steps:")
+            print("1. Make sure Google Chrome is installed")
+            print("2. Try updating Chrome to the latest version")
+            print("3. Check your internet connection (needed to download ChromeDriver)")
+            raise
 
     def preprocess_captcha_image(self, img, method='default'):
         """
@@ -630,16 +665,33 @@ CAPTCHA Text:"""
 
             # Try to solve CAPTCHA automatically first
             if not captcha_text:
-                # Try VLM first (free, ~60-70% accuracy)
+                # Try VLM first (Ollama - best accuracy if available)
                 try:
+                    print("Attempting VLM-based CAPTCHA solving...")
                     captcha_text, vlm_confidence = self.solve_captcha_with_vlm()
                     if captcha_text:
                         safe_print(f"✓ VLM solved CAPTCHA with confidence: {vlm_confidence:.2f}")
-                    else:
-                        print("VLM confidence too low, will require manual entry...")
+                        print(f"  CAPTCHA text: '{captcha_text}'")
                 except Exception as e:
-                    print(f"VLM failed: {e}, will require manual entry...")
+                    print(f"VLM not available: {str(e).split(':')[0]}")
                     captcha_text = None
+                
+                # If VLM failed, try OCR (Tesseract - fallback)
+                if not captcha_text:
+                    try:
+                        print("Trying OCR-based CAPTCHA solving...")
+                        captcha_text = self.solve_captcha(save_debug=False)
+                        if captcha_text:
+                            safe_print(f"✓ OCR solved CAPTCHA: '{captcha_text}'")
+                            print(f"  Length: {len(captcha_text)} characters")
+                        else:
+                            print("OCR returned empty result")
+                    except Exception as e:
+                        print(f"OCR failed: {str(e)}")
+                        captcha_text = None
+            
+            print(f"\nFinal CAPTCHA text to enter: '{captcha_text}'" if captcha_text else "\nNo CAPTCHA text available, will require manual entry")
+
 
 
 
@@ -680,10 +732,11 @@ CAPTCHA Text:"""
                 print("="*50)
                 print("OCR failed. Please look at the browser window and enter the CAPTCHA.")
                 print("After entering the CAPTCHA, the script will automatically proceed.")
+                print("You have 120 seconds to enter it...")
                 print("="*50 + "\n")
 
                 # Wait for user to enter CAPTCHA (check if field has value)
-                wait_time = 30  # Wait up to 60 seconds
+                wait_time = 120  # Wait up to 120 seconds
                 for _ in range(wait_time):
                     if captcha_field.get_attribute('value'):
                         print("CAPTCHA entered! Proceeding with login...")
