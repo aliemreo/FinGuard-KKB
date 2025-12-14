@@ -29,7 +29,7 @@ flowchart TB
         CLI["Office, Company<br/>Date Range"]
     end
 
-    subgraph ORCHESTRATOR[""]
+    subgraph ORCHESTRATOR["Orchestrator"]
         direction TB
         HISTORY["Check History<br/>(Gap Detection)"]
         LOOP["Process Each Gap"]
