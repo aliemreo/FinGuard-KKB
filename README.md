@@ -291,7 +291,7 @@ All settings live in `.env` (template: [`.env.example`](.env.example)). The comp
 | `OLLAMA_HOST` | Ollama server address, if not `127.0.0.1:11434` |
 | `GAZETTE_DIR`, `OUTPUT_DIR` | Where the gazette agent keeps PDFs and OCR output |
 
-The default LLM endpoint is `https://mia.csp.kloudeks.com/v1` with `gpt-oss-120b`. Any OpenAI-compatible provider works.
+The default LLM endpoint is `...` with `gpt-oss-120b`. Any OpenAI-compatible provider works.
 
 ---
 
