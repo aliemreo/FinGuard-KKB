@@ -51,7 +51,7 @@ flowchart TB
         PG[("PostgreSQL<br/>gazette_db")]
     end
 
-    subgraph REPORT["📄 REPORT (report-ofe/)"]
+    subgraph REPORT["📄 REPORT (report/)"]
         GENERATOR["generator.py"]
         HTML["Final_Report.html"]
     end
@@ -367,7 +367,7 @@ flowchart TD
 ## 📁 Directory Structure
 
 ```
-TTSG_Agent/
+trade_registry/
 ├── app.py                      # 🔄 Main orchestrator
 ├── ticaret_sicil_scraper.py    # 📥 Web scraper (2050 lines)
 ├── batch_process_gazettes.py   # ⚙️ OCR + extraction (1536 lines)
@@ -386,7 +386,7 @@ db/
     ├── crawl_metadata.json     # 📋 Crawl session info
     └── ilanlar.json            # 📊 Announcements data
 
-report-ofe/
+report/
 └── generator.py                # 📄 Report generator
 ```
 

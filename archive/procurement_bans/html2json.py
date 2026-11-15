@@ -16,10 +16,10 @@ import glob
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
-# Novita AI kullanıyorsan base URL genelde budur, .env'den de alabilirsin
-BASE_URL = os.getenv("BASE_URL", "[https://api.novita.ai/openai](https://api.novita.ai/openai)") 
-# Model ismini senin attığın snippet'teki gibi güncelledim
-MODEL = "openai/gpt-oss-120b"
+# OpenAI uyumlu herhangi bir uç nokta; varsayılanlar pipeline.py ile aynı.
+# Novita kullanıyorsan: BASE_URL=https://api.novita.ai/openai, MODEL=openai/gpt-oss-120b
+BASE_URL = os.getenv("BASE_URL", "https://mia.csp.kloudeks.com/v1")
+MODEL = os.getenv("MODEL", "gpt-oss-120b")
 
 # Veritabanı Ayarları
 DB_CONFIG = {

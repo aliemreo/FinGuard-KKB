@@ -7,3 +7,7 @@ extracted_urls.json
 merged_results.json
 sentiment_results.json
 mDeBERTa_finetuned_for_english_turkish_news_articles/
+__pycache__/
+# generated at the repo root by arama_motoru.py / the dashboard
+/ihale_results.json
+/Final_Report.html

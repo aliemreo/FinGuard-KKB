@@ -35,8 +35,10 @@ load_dotenv(dotenv_path=env_path)
 
 from layout_detector import analyze_page_layout, surya_layout_ocr
 
-# Set Tesseract path
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# Set Tesseract path (Windows default install location; Linux/macOS use tesseract from PATH)
+if sys.platform == 'win32':
+    pytesseract.pytesseract.tesseract_cmd = os.getenv(
+        "TESSERACT_CMD", r'C:\Program Files\Tesseract-OCR\tesseract.exe')
 
 # Initialize OpenAI client with timeout
 client = OpenAI(

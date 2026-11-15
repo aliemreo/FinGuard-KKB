@@ -147,7 +147,7 @@ def run_batch_processor(name: str):
     script_name = "batch_process_gazettes.py"
     script_path = os.path.join(os.getcwd(), script_name)
     
-    cmd_str = f'"{python_exe}" "{script_path}" --name {name}'
+    cmd_str = f'"{python_exe}" "{script_path}" --name "{name}"'
     
     result = subprocess.run(cmd_str, shell=True)
     
@@ -212,7 +212,7 @@ def run_report_generator(company_name: str, start_date: str, end_date: str):
     python_exe = sys.executable
     script_dir = Path(__file__).parent
     root_dir = script_dir.parent
-    script_path = root_dir / "report-ofe" / "generator.py"
+    script_path = root_dir / "report" / "generator.py"
     
     # helper to format date from yyyy-mm-dd to dd.mm.yyyy for generator
     def fmt_date(d):
@@ -226,8 +226,8 @@ def run_report_generator(company_name: str, start_date: str, end_date: str):
 
     cmd_str = f'"{python_exe}" "{script_path}" --company-name "{company_name}" --start-date "{s_date}" --end-date "{e_date}"'
     
-    # Run in report-ofe directory because it looks for relative paths (e.g. news.json)
-    cwd_path = root_dir / "report-ofe"
+    # Run in report directory because it looks for relative paths (e.g. news.json)
+    cwd_path = root_dir / "report"
     
     print(f"Running report generator for {company_name} ({s_date} - {e_date})...")
     result = subprocess.run(cmd_str, shell=True, cwd=str(cwd_path))

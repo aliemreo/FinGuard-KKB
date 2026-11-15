@@ -1,4 +1,4 @@
-# Core dependencies for TTSG_Agent/app.py pipeline
+# Core dependencies for trade_registry/app.py pipeline
 # Python 3.8+
 
 # Environment & Configuration

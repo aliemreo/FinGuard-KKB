@@ -611,7 +611,7 @@ def run_sicil_script(params):
         
         cmd = [
             "python",
-            "TTSG_Agent/ticaret_sicil_scraper.py",
+            "trade_registry/ticaret_sicil_scraper.py",
             "--office",
             params.get("office-location", ""),
             "--title",
@@ -665,7 +665,7 @@ def run_news_script(params):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             bufsize=1,
-            cwd="news_scanning_and_sentimental_analysis",
+            cwd="news_sentiment",
             env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         )
 
@@ -727,7 +727,7 @@ def generate_pdf():
     try:
         cmd = [
             "python",
-            "report-ofe/generator.py",
+            "report/generator.py",
             "--start-date",
             current_params.get("start-date", ""),
             "--end-date",

@@ -32,12 +32,13 @@ SCRIPT_DIR = Path(__file__).parent
 MODEL_PATH = SCRIPT_DIR / "finetuned_sentiment_model" / "final_model"
 INPUT_DIR = SCRIPT_DIR / "scraped_data" / "cleaned_text"
 OUTPUT_FILE = SCRIPT_DIR / "sentiment_results.json"
-API_KEY = os.getenv("MIA_API_KEY")
-API_BASE_URL = "https://mia.csp.kloudeks.com/v1"
-API_MODEL = "gpt-oss-120b"
+# Same OpenAI-compatible endpoint as the TTSG agent; MIA_API_KEY kept for older .env files
+API_KEY = os.getenv("MIA_API_KEY") or os.getenv("OPENAI_API_KEY")
+API_BASE_URL = os.getenv("OPENAI_API_BASE") or "https://mia.csp.kloudeks.com/v1"
+API_MODEL = os.getenv("OPENAI_MODEL") or "gpt-oss-120b"
 
 if not USE_LOCAL_MODEL and not API_KEY:
-    print("[!] MIA_API_KEY not found - will use local model only")
+    print("[!] OPENAI_API_KEY / MIA_API_KEY not found - will use local model only")
     USE_LOCAL_MODEL = True
 
 ID_TO_LABEL = {0: "positive", 1: "negative", 2: "neutral"}
@@ -64,7 +65,7 @@ def get_api_sentiment(client, text, company_name, max_retries=3):
         f"Analyze this news article about {company_name}. "
         f"Classify sentiment as 'positive', 'negative', or 'neutral'. Provide confidence (0.0-1.0). "
         f"Write a 2-3 sentence summary in the SAME LANGUAGE as the article. "
-        'Return ONLY valid JSON: {{"label": "positive", "confidence": 0.95, "summary": "..."}}'
+        'Return ONLY valid JSON: {"label": "positive", "confidence": 0.95, "summary": "..."}'
     )
     
     for attempt in range(max_retries):

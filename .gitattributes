@@ -1,1 +1,1 @@
-news_scanning_and_sentimental_analysis/finetuned_sentiment_model/final_model/** filter=lfs diff=lfs merge=lfs -text
+news_sentiment/finetuned_sentiment_model/final_model/** filter=lfs diff=lfs merge=lfs -text

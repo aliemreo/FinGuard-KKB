@@ -8,6 +8,10 @@ import re
 from difflib import SequenceMatcher
 from typing import List, Dict, Optional
 import argparse
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--start-date", type=str, required=True)
@@ -128,7 +132,8 @@ class NewsFilterConfig:
     }
 
     TITLE_SIMILARITY_THRESHOLD = 0.75
-    CURRENTNEWS_API_KEY = "j0IuEj0aSYQDTmFpbYrboY6DfxKSzvb8Rd6_j-VcfZBaVKI-"
+    # Optional: without a key the extractor uses DuckDuckGo search only
+    CURRENTNEWS_API_KEY = os.getenv("CURRENTS_API_KEY", "")
     CURRENTNEWS_BASE_URL = "https://api.currentsapi.services/v1/search"
     SEARCH_QUERY_TEMPLATES = [
         '"{company}" haber {year}',
@@ -315,6 +320,8 @@ class CurrentNewsSearchEngine:
 
     def search_currentnews(self, company_name: str, max_results: int = 100, language: str = "tr",
                            start_date: Optional[str] = START_DATE, end_date: Optional[str] = END_DATE) -> List[Dict]:
+        if not self.api_key:
+            return []
         params = {"keywords": company_name, "apiKey": self.api_key, "language": language}
         if start_date:
             params["start_date"] = start_date

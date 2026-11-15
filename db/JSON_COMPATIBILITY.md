@@ -1,6 +1,6 @@
 # JSON ↔ Database Compatibility
 
-This document explains the compatibility issues between the JSON output from `TTSG_Agent/batch_process_gazettes.py` and what the `db/` loader expects.
+This document explains the compatibility issues between the JSON output from `trade_registry/batch_process_gazettes.py` and what the `db/` loader expects.
 
 ## Schema: `ilanlar` Table
 
@@ -24,20 +24,20 @@ This document explains the compatibility issues between the JSON output from `TT
 
 ### 1. `announcement_number` is NULL (CRITICAL)
 
-**TTSG_Agent outputs:**
+**trade_registry outputs:**
 ```json
 "announcement_number": null
 ```
 
 **Problem:** `ilan_no` is UNIQUE and required. Records with null are **SKIPPED**.
 
-**Fix needed in TTSG_Agent:** Extract "İlan Sıra No:" from the OCR text.
+**Fix needed in trade_registry:** Extract "İlan Sıra No:" from the OCR text.
 
 ---
 
 ### 2. Date Format Mismatch
 
-**TTSG_Agent outputs:**
+**trade_registry outputs:**
 ```json
 "date": "30 EKIM 2024"
 ```
@@ -46,13 +46,13 @@ This document explains the compatibility issues between the JSON output from `TT
 
 **Current workaround:** `import_to_postgres.py` converts Turkish months to numbers.
 
-**Better fix:** Have TTSG_Agent output ISO format: `"2024-10-30"`
+**Better fix:** Have trade_registry output ISO format: `"2024-10-30"`
 
 ---
 
 ### 3. City (`il`) Field Missing
 
-**TTSG_Agent outputs:**
+**trade_registry outputs:**
 ```json
 "content": {
     // no "city" field
@@ -63,20 +63,20 @@ This document explains the compatibility issues between the JSON output from `TT
 
 **Current workaround:** Extracted from `registry_office` string (e.g., "T.C. **İSTANBUL** TİCARET...")
 
-**Better fix:** Add `"city": "İSTANBUL"` to content in TTSG_Agent.
+**Better fix:** Add `"city": "İSTANBUL"` to content in trade_registry.
 
 ---
 
 ### 4. `registry_number` is "Unknown"
 
-**TTSG_Agent outputs:**
+**trade_registry outputs:**
 ```json
 "registry_number": "Unknown"
 ```
 
 **Problem:** Should be actual ticaret sicil no or null.
 
-**Fix needed in TTSG_Agent:** Extract from "Ticaret Sicil No:" in OCR text.
+**Fix needed in trade_registry:** Extract from "Ticaret Sicil No:" in OCR text.
 
 ---
 
@@ -84,7 +84,7 @@ This document explains the compatibility issues between the JSON output from `TT
 
 The `announcement_type` string maps to `ilan_turu` SMALLINT:
 
-| Code | Category | TTSG_Agent Types |
+| Code | Category | trade_registry Types |
 |------|----------|------------------|
 | 1 | Kuruluş | `kuruluş`, `yeni_kayit` |
 | 2 | Yönetim/Temsil | `yönetim`, `müdür_atama` |
@@ -104,7 +104,7 @@ The `announcement_type` string maps to `ilan_turu` SMALLINT:
 
 | Issue | Severity | Handled By |
 |-------|----------|------------|
-| NULL `announcement_number` | 🔴 Critical | **Skipped** - needs TTSG_Agent fix |
+| NULL `announcement_number` | 🔴 Critical | **Skipped** - needs trade_registry fix |
 | Turkish date format | 🟡 Medium | `import_to_postgres.py` converts |
 | Missing `city` field | 🟡 Medium | Extracted from `registry_office` |
 | "Unknown" values | 🟢 Low | Converted to NULL |

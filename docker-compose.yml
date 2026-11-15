@@ -11,7 +11,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./db/database_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
       # Friend's init.sql (loads after schema)
-      - ./final/init.sql:/docker-entrypoint-initdb.d/02_init.sql:ro
+      - ./procurement_bans/init.sql:/docker-entrypoint-initdb.d/02_init.sql:ro
     ports:
       - "5435:5432"
     healthcheck:
@@ -40,7 +40,7 @@ services:
 
   # Friend's Python Application (ihale-app)
   ihale-app:
-    build: ./final
+    build: ./procurement_bans
     image: ihale-projesi:v2
     container_name: ihale_container_final
     depends_on:
@@ -57,17 +57,18 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - ./final:/workspace
+      - ./procurement_bans:/workspace
     environment:
       # Connect to the postgres service above
       - DB_HOST=postgres
       - DB_NAME=${POSTGRES_DB:-kkb_db}
       - DB_USER=${POSTGRES_USER:-kkb_user}
-      - DB_PASS=${POSTGRES_PASSWORD:-kkb_password}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-kkb_password}
+      # LLM settings (API_KEY, BASE_URL, MODEL) come from procurement_bans/.env, mounted at /workspace/.env
 
   # News Scanning and Sentiment Analysis
   news-scanner:
-    build: ./news_scanning_and_sentimental_analysis
+    build: ./news_sentiment
     image: news-scanner:latest
     container_name: news_scanner_app
     depends_on:
@@ -76,8 +77,8 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - ./news_scanning_and_sentimental_analysis:/app
-      - ./report-ofe:/app/report-ofe
+      - ./news_sentiment:/app
+      - ./report:/app/report
     environment:
       # OpenAI API
       - OPENAI_API_KEY=${OPENAI_API_KEY}

@@ -20,7 +20,7 @@ data_buckets = {"ihale": [], "sicil": [], "news": []}
 FILES = {
     "ihale": "ihale.json",
     "sicil": "sicil.json",
-    "news": "../news_scanning_and_sentimental_analysis/merged_results.json",
+    "news": "../news_sentiment/merged_results.json",
 }
 
 

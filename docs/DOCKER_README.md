@@ -16,7 +16,7 @@ docker-compose logs -f postgres
 # 4. Import JSON data
 cd db
 pip install psycopg2-binary python-dotenv
-python import_json.py --json-dir ../TTSG_Agent/OCR_outputs/json
+python import_json.py --json-dir ../trade_registry/OCR_outputs/json
 ```
 
 ## Services
@@ -24,7 +24,7 @@ python import_json.py --json-dir ../TTSG_Agent/OCR_outputs/json
 | Service | URL | Credentials |
 |---------|-----|-------------|
 | PostgreSQL | `localhost:5435` | See `.env` |
-| pgAdmin | http://localhost:5050 | `admin@kkb.local` / `admin` |
+| pgAdmin | http://localhost:5050 | `admin@admin.com` / `admin` (see docker-compose.yml) |
 
 ## Commands
 
@@ -60,7 +60,7 @@ docker-compose up -d
 │                    import_json.py                    │
 │                         ↑                            │
 │  ┌─────────────────────────────────────────────┐    │
-│  │  TTSG_Agent (runs locally)                   │    │
+│  │  trade_registry (runs locally)               │    │
 │  │  • batch_process_gazettes.py                 │    │
 │  │  • ticaret_sicil_scraper.py                  │    │
 │  │  • OCR + Tesseract + Surya                   │    │

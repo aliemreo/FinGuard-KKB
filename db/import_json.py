@@ -148,7 +148,7 @@ def import_json_file(cursor, json_path: Path, source_file: str) -> dict:
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Import gazette JSON files to PostgreSQL')
-    parser.add_argument('--json-dir', type=str, default='TTSG_Agent/OCR_outputs/json',
+    parser.add_argument('--json-dir', type=str, default='trade_registry/OCR_outputs/json',
                        help='Directory containing JSON files')
     parser.add_argument('--clear', action='store_true',
                        help='Clear existing data before import')

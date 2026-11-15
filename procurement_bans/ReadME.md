@@ -23,7 +23,8 @@ Projenin ana dizininde `.env` adında bir dosya oluşturun ve aşağıdaki ayarl
 ```env
 # --- LLM API Ayarları ---
 API_KEY=sk-BURAYA_KENDI_API_ANAHTARINI_YAZ
-BASE_URL=[https://mia.csp.kloudeks.com/v1](https://mia.csp.kloudeks.com/v1)
+BASE_URL=https://mia.csp.kloudeks.com/v1
+MODEL=gpt-oss-120b
 
 # --- Veritabanı Ayarları ---
 # Docker içinde host ismi servis adı olan 'db' olmalıdır.

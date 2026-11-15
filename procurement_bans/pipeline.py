@@ -45,7 +45,7 @@ load_dotenv()
 # API Ayarları
 API_KEY = os.getenv("API_KEY")
 BASE_URL = os.getenv("BASE_URL", "https://mia.csp.kloudeks.com/v1")
-MODEL = "gpt-oss-120b"
+MODEL = os.getenv("MODEL", "gpt-oss-120b")
 
 # Veritabanı Ayarları
 DB_CONFIG = {
@@ -1053,7 +1053,13 @@ async def process_and_save_html(html_path: str, extractor: HTMLToJSONExtractor, 
         
         raw_json = await extractor.extract_from_html(html_content, debug=debug)
         final_json = extractor.normalize_output(raw_json)
-        
+
+        # LLM çağrısı başarısız olursa (yanlış API_KEY/BASE_URL, timeout) extractor boş
+        # şablon döndürür; bunu veritabanına boş satır olarak yazma.
+        if not final_json.get("yasakli") and not final_json.get("ihale_kayit_numarasi"):
+            log_message(f"⚠️ LLM veri döndürmedi, DB'ye yazılmadı: {filename}")
+            return False
+
         success = insert_record_to_db(final_json, yasaklama_tarihi)
         if success and debug:
             log_message(f"✅ DB'ye kaydedildi: {filename}")
